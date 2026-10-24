@@ -26,7 +26,8 @@ const initialProducts: Product[] = [
     name: "DynaChrom system",
     brand: "ThermoFisher",
     description: "High-performance chromatography system for laboratories.",
-    imageUrl: "",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/HPLC_system_-_real.jpg/960px-HPLC_system_-_real.jpg",
     category: "Laboratory",
     type: "Chromatography",
     subType: "HPLC",
@@ -37,7 +38,8 @@ const initialProducts: Product[] = [
     name: "AeroSense Monitor",
     brand: "Northstar",
     description: "Continuous air-quality monitoring for commercial spaces.",
-    imageUrl: "",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/AXIS_D6310_Air_Quality_Sensor.jpg/960px-AXIS_D6310_Air_Quality_Sensor.jpg",
     category: "Monitoring",
     type: "Environment",
     subType: "Air quality",
@@ -48,7 +50,8 @@ const initialProducts: Product[] = [
     name: "Vertex Pro Analyzer",
     brand: "Vertex",
     description: "Compact analyzer designed for fast, accurate results.",
-    imageUrl: "",
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/SVAN_979_Sound_Level_Meter_and_Analyzer.jpg/960px-SVAN_979_Sound_Level_Meter_and_Analyzer.jpg",
     category: "Laboratory",
     type: "Analyzer",
     subType: "Portable",
@@ -743,19 +746,32 @@ function ProductThumb({
 }) {
   const [failedUrl, setFailedUrl] = useState("");
   const url = product.imageUrl.trim();
-  const size = large ? "h-40 w-full" : "size-12 shrink-0";
+  const showImage = Boolean(url) && failedUrl !== url;
+  const size = large
+    ? showImage
+      ? "w-full"
+      : "h-40 w-full"
+    : "size-12 shrink-0";
   const visual = placeholderVisual(product);
 
   return (
     <span
-      className={`relative flex ${size} items-center justify-center overflow-hidden rounded-xl border border-white/[0.07] bg-gradient-to-br ${visual.gradient} text-white/85`}
+      className={`relative flex ${size} items-center justify-center overflow-hidden rounded-xl border border-white/[0.07] ${
+        showImage
+          ? "bg-[#080d1b]"
+          : `bg-gradient-to-br ${visual.gradient} text-white/85`
+      }`}
     >
-      {url && failedUrl !== url ? (
+      {showImage ? (
         // Arbitrary user-supplied remote URL, so next/image is not suitable.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           alt={`${product.name} image`}
-          className="size-full object-cover"
+          className={
+            large
+              ? "block h-auto max-h-[60vh] w-auto max-w-full object-contain"
+              : "size-full object-contain"
+          }
           onError={() => setFailedUrl(url)}
           src={url}
         />
