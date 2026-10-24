@@ -5,14 +5,13 @@ import { useLoginViewModel } from "../hooks/use-login-view-model";
 export default function LoginForm() {
   const {
     isPasswordVisible,
-    message,
     passwordToggleLabel,
     togglePasswordVisibility,
     handleSubmit,
   } = useLoginViewModel();
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <form className="space-y-5" noValidate onSubmit={handleSubmit}>
       <div>
         <label
           className="mb-2 block text-sm font-medium text-slate-700"
@@ -26,7 +25,6 @@ export default function LoginForm() {
           id="email"
           name="email"
           placeholder="you@company.com"
-          required
           type="email"
         />
       </div>
@@ -53,7 +51,6 @@ export default function LoginForm() {
             id="password"
             name="password"
             placeholder="Enter your password"
-            required
             type={isPasswordVisible ? "text" : "password"}
           />
           <button
@@ -87,14 +84,8 @@ export default function LoginForm() {
         Sign in
       </button>
 
-      <p
-        aria-live="polite"
-        className={`min-h-5 text-center text-sm ${
-          message ? "text-amber-800" : "text-transparent"
-        }`}
-        role="status"
-      >
-        {message || " "}
+      <p className="text-center text-xs leading-5 text-slate-500">
+        Demo access: sign-in checks are skipped. No account is authenticated.
       </p>
     </form>
   );
