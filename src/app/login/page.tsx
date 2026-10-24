@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import LoginForm from "@/features/auth/presentation/components/login-form";
 import LoginIllustration from "@/features/auth/presentation/components/login-illustration";
 
@@ -45,13 +46,13 @@ export default function LoginPage() {
             <LoginForm />
 
             <p className="mt-8 text-center text-sm text-slate-500">
-              Don&apos;t have an account?{" "}
-              <a
-                href="/create-account"
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
                 className="font-semibold text-indigo-700 decoration-indigo-300 underline-offset-4 hover:text-indigo-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
               >
                 Create account
-              </a>
+            </Link>
             </p>
           </div>
         </section>
