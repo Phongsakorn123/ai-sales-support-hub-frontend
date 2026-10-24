@@ -1,31 +1,17 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import ProductFormFields, {
+  emptyProduct,
+  validateProduct,
+  type ProductFormValues,
+} from "@/components/dashboard/product-form";
 import VoiceSearch from "@/components/dashboard/voice-search";
 import LogoutButton from "@/features/auth/presentation/components/logout-button";
 
 type DashboardTab = "search" | "products" | "analytics";
 
-interface Product {
-  id: number;
-  name: string;
-  brand: string;
-  description: string;
-  imageUrl: string;
-  category: string;
-  type: string;
-  subType: string;
-}
-
-interface ProductFormValues {
-  name: string;
-  brand: string;
-  description: string;
-  imageUrl: string;
-  category: string;
-  type: string;
-  subType: string;
-}
+type Product = ProductFormValues & { id: number };
 
 const tabs: { id: DashboardTab; label: string; icon: ReactNode }[] = [
   { id: "search", label: "Product Search", icon: <SearchIcon /> },
@@ -35,6 +21,7 @@ const tabs: { id: DashboardTab; label: string; icon: ReactNode }[] = [
 
 const initialProducts: Product[] = [
   {
+    ...emptyProduct,
     id: 1,
     name: "DynaChrom system",
     brand: "ThermoFisher",
@@ -45,6 +32,7 @@ const initialProducts: Product[] = [
     subType: "HPLC",
   },
   {
+    ...emptyProduct,
     id: 2,
     name: "AeroSense Monitor",
     brand: "Northstar",
@@ -55,6 +43,7 @@ const initialProducts: Product[] = [
     subType: "Air quality",
   },
   {
+    ...emptyProduct,
     id: 3,
     name: "Vertex Pro Analyzer",
     brand: "Vertex",
@@ -66,19 +55,14 @@ const initialProducts: Product[] = [
   },
 ];
 
-const emptyProduct: ProductFormValues = {
-  name: "",
-  brand: "",
-  description: "",
-  imageUrl: "",
-  category: "",
-  type: "",
-  subType: "",
-};
+const UNCATEGORIZED = "Uncategorized";
+
+function categoryOf(product: { category: string }): string {
+  return product.category.trim() || UNCATEGORIZED;
+}
 
 const inputClass =
   "h-11 w-full rounded-xl border border-white/10 bg-[#080d1b] px-3.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10";
-const labelClass = "mb-2 block text-xs font-medium text-slate-300";
 
 export default function DashboardWorkspace() {
   const [activeTab, setActiveTab] = useState<DashboardTab>("search");
@@ -93,6 +77,25 @@ export default function DashboardWorkspace() {
   const [productForm, setProductForm] =
     useState<ProductFormValues>(emptyProduct);
   const [productMessage, setProductMessage] = useState("");
+  const [showProductErrors, setShowProductErrors] = useState(false);
+  const [detailProductId, setDetailProductId] = useState<number | null>(null);
+  const productErrors = validateProduct(productForm);
+
+  const categoryOptions = [...new Set(products.map(categoryOf))];
+  const activeCategoryFilter = categoryOptions.includes(categoryFilter)
+    ? categoryFilter
+    : "all";
+  const detailProduct =
+    products.find((product) => product.id === detailProductId) ?? null;
+
+  useEffect(() => {
+    if (detailProductId === null) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDetailProductId(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [detailProductId]);
 
   const visibleProducts = products.filter((product) => {
     const query = productQuery.trim().toLowerCase();
@@ -101,33 +104,37 @@ export default function DashboardWorkspace() {
       [product.name, product.brand, product.description]
         .some((value) => value.toLowerCase().includes(query));
     const matchesCategory =
-      categoryFilter === "all" || product.category === categoryFilter;
+      activeCategoryFilter === "all" ||
+      categoryOf(product) === activeCategoryFilter;
     return matchesQuery && matchesCategory;
   });
+
+  const groupedProducts = new Map<string, Product[]>();
+  for (const product of visibleProducts) {
+    const category = categoryOf(product);
+    groupedProducts.set(category, [
+      ...(groupedProducts.get(category) ?? []),
+      product,
+    ]);
+  }
 
   function openProductDialog(product?: Product): void {
     setEditingProductId(product?.id ?? null);
     setProductForm(
       product
-        ? {
-            name: product.name,
-            brand: product.brand,
-            description: product.description,
-            imageUrl: product.imageUrl,
-            category: product.category,
-            type: product.type,
-            subType: product.subType,
-          }
+        ? { ...emptyProduct, ...product }
         : emptyProduct,
     );
     setProductMessage("");
+    setShowProductErrors(false);
     setIsProductDialogOpen(true);
   }
 
   function saveProduct(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    if (productForm.description.trim().length < 10) {
-      setProductMessage("Description must contain at least 10 characters.");
+    if (Object.keys(productErrors).length > 0) {
+      setShowProductErrors(true);
+      setProductMessage("Please fix the highlighted fields before saving.");
       return;
     }
 
@@ -405,16 +412,14 @@ export default function DashboardWorkspace() {
                 <select
                   className="min-w-0 flex-1 bg-transparent text-xs text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                   onChange={(event) => setCategoryFilter(event.target.value)}
-                  value={categoryFilter}
+                  value={activeCategoryFilter}
                 >
                   <option value="all">All Categories</option>
-                  {[...new Set(products.map((product) => product.category))].map(
-                    (category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ),
-                  )}
+                  {categoryOptions.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -427,60 +432,83 @@ export default function DashboardWorkspace() {
                 </span>
               </p>
               <span className="hidden text-[11px] text-slate-500 sm:block">
-                Select a product to edit or remove it
+                Select a product to view its details
               </span>
             </div>
 
-            <div className="mt-3 divide-y divide-white/[0.06]">
-              {visibleProducts.map((product) => (
-                <article
-                  className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-                  key={product.id}
-                >
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.03] text-indigo-200">
-                      <BoxIcon />
+            <div className="mt-3 space-y-7">
+              {[...groupedProducts].map(([category, items]) => (
+                <section aria-labelledby={`category-${category}`} key={category}>
+                  <h3
+                    className="flex items-center gap-2 border-b border-white/[0.06] pb-2 text-sm font-semibold text-slate-100"
+                    id={`category-${category}`}
+                  >
+                    {category}
+                    <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[11px] font-medium text-slate-400">
+                      {items.length}
                     </span>
-                    <div className="min-w-0">
-                      <h3 className="truncate text-sm font-medium text-slate-100">
-                        {product.name}
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-400">
-                        {product.brand} · {product.category} · {product.type}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                        {product.description}
-                      </p>
-                    </div>
+                  </h3>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {items.map((product) => (
+                      <article
+                        className="group relative rounded-xl border border-white/[0.07] bg-white/[0.02] transition hover:border-indigo-300/30 hover:bg-white/[0.04]"
+                        key={product.id}
+                      >
+                        <button
+                          aria-label={`View details for ${product.name}`}
+                          className="flex w-full min-w-0 items-start gap-3 rounded-xl p-3 pr-[5.5rem] text-left focus-visible:outline-2 focus-visible:outline-cyan-300"
+                          onClick={() => setDetailProductId(product.id)}
+                          type="button"
+                        >
+                          <ProductThumb product={product} />
+                          <span className="block min-w-0">
+                            <span className="block truncate text-sm font-medium text-slate-100">
+                              {product.name}
+                            </span>
+                            <span className="mt-1 block truncate text-xs text-slate-400">
+                              {[product.brand, product.type, product.subType]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                            <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500">
+                              {product.description}
+                            </span>
+                          </span>
+                        </button>
+                        <div className="absolute right-2 top-2 flex items-center gap-1.5">
+                          <button
+                            aria-label={`Edit ${product.name}`}
+                            className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-2 focus-visible:outline-cyan-300"
+                            onClick={() => openProductDialog(product)}
+                            type="button"
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            aria-label={`Delete ${product.name}`}
+                            className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-rose-300"
+                            onClick={() =>
+                              setProducts((current) =>
+                                current.filter((item) => item.id !== product.id),
+                              )
+                            }
+                            type="button"
+                          >
+                            <TrashIcon />
+                          </button>
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-                    <button
-                      aria-label={`Edit ${product.name}`}
-                      className="flex size-9 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-2 focus-visible:outline-cyan-300"
-                      onClick={() => openProductDialog(product)}
-                      type="button"
-                    >
-                      <EditIcon />
-                    </button>
-                    <button
-                      aria-label={`Delete ${product.name}`}
-                      className="flex size-9 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-rose-300"
-                      onClick={() =>
-                        setProducts((current) =>
-                          current.filter((item) => item.id !== product.id),
-                        )
-                      }
-                      type="button"
-                    >
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </article>
+                </section>
               ))}
               {visibleProducts.length === 0 && (
-                <p className="py-10 text-center text-sm text-slate-400">
-                  No products match your search.
-                </p>
+                <div className="py-10 text-center" role="status">
+                  <p className="text-sm font-medium text-slate-300">No products found</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Try a different search or category, or add a new product.
+                  </p>
+                </div>
               )}
             </div>
             <p className="mt-4 text-center text-[11px] text-slate-500">
@@ -565,6 +593,17 @@ export default function DashboardWorkspace() {
         </section>
       </div>
 
+      {detailProduct && (
+        <ProductDetailModal
+          onClose={() => setDetailProductId(null)}
+          onEdit={() => {
+            setDetailProductId(null);
+            openProductDialog(detailProduct);
+          }}
+          product={detailProduct}
+        />
+      )}
+
       {isProductDialogOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/65 p-4 backdrop-blur-sm"
@@ -577,7 +616,7 @@ export default function DashboardWorkspace() {
           <section
             aria-labelledby="product-dialog-title"
             aria-modal="true"
-            className="my-auto w-full max-w-xl rounded-2xl border border-white/[0.1] bg-[#111a2c] p-5 shadow-2xl shadow-black/40 sm:p-7"
+            className="my-auto w-full max-w-3xl rounded-2xl border border-white/[0.1] bg-[#111a2c] p-5 shadow-2xl shadow-black/40 sm:p-7"
             role="dialog"
           >
             <div className="flex items-start justify-between gap-4">
@@ -599,107 +638,22 @@ export default function DashboardWorkspace() {
               </button>
             </div>
 
-            <form className="mt-5 space-y-4" onSubmit={saveProduct}>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className={labelClass}>Product Name *</span>
-                  <input
-                    autoFocus
-                    className={inputClass}
-                    onChange={(event) =>
-                      setProductForm((form) => ({
-                        ...form,
-                        name: event.target.value,
-                      }))
-                    }
-                    required
-                    value={productForm.name}
-                  />
-                </label>
-                <label className="block">
-                  <span className={labelClass}>Brand *</span>
-                  <input
-                    className={inputClass}
-                    onChange={(event) =>
-                      setProductForm((form) => ({
-                        ...form,
-                        brand: event.target.value,
-                      }))
-                    }
-                    required
-                    value={productForm.brand}
-                  />
-                </label>
-              </div>
-
-              <label className="block">
-                <span className={labelClass}>
-                  Description * (minimum 10 characters)
-                </span>
-                <textarea
-                  className="min-h-20 w-full resize-y rounded-xl border border-white/10 bg-[#080d1b] px-3.5 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
-                  maxLength={1000}
-                  minLength={10}
-                  onChange={(event) =>
-                    setProductForm((form) => ({
-                      ...form,
-                      description: event.target.value,
-                    }))
-                  }
-                  required
-                  value={productForm.description}
-                />
-                <span className="mt-1 block text-[11px] text-slate-500">
-                  {productForm.description.length} characters
-                </span>
-              </label>
-
-              <label className="block">
-                <span className={labelClass}>Image URL *</span>
-                <input
-                  className={inputClass}
-                  onChange={(event) =>
-                    setProductForm((form) => ({
-                      ...form,
-                      imageUrl: event.target.value,
-                    }))
-                  }
-                  required
-                  type="url"
-                  value={productForm.imageUrl}
-                />
-              </label>
-
-              <div className="grid gap-4 sm:grid-cols-3">
-                {(
-                  [
-                    ["category", "Category *"],
-                    ["type", "Type *"],
-                    ["subType", "Sub Type *"],
-                  ] as const
-                ).map(([field, label]) => (
-                  <label className="block" key={field}>
-                    <span className={labelClass}>{label}</span>
-                    <input
-                      className={inputClass}
-                      onChange={(event) =>
-                        setProductForm((form) => ({
-                          ...form,
-                          [field]: event.target.value,
-                        }))
-                      }
-                      required
-                      value={productForm[field]}
-                    />
-                  </label>
-                ))}
-              </div>
+            <form className="mt-5 space-y-4" noValidate onSubmit={saveProduct}>
+              <ProductFormFields
+                errors={productErrors}
+                onChange={setProductForm}
+                showAllErrors={showProductErrors}
+                values={productForm}
+              />
 
               {productMessage && (
                 <p className="text-xs text-rose-300" role="alert">
                   {productMessage}
                 </p>
               )}
+              <p className="text-[11px] text-slate-500">
+                Products are kept in this browser session only; nothing is saved to a database yet.
+              </p>
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   className="h-10 rounded-xl border border-white/[0.1] px-4 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
@@ -777,6 +731,295 @@ function SearchIcon({ className = "size-4" }: { className?: string }) {
       <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" strokeWidth="1.7" />
       <path d="m15.5 15.5 4.2 4.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
     </svg>
+  );
+}
+
+function ProductThumb({
+  product,
+  large = false,
+}: {
+  product: Product;
+  large?: boolean;
+}) {
+  const [failedUrl, setFailedUrl] = useState("");
+  const url = product.imageUrl.trim();
+  const size = large ? "h-40 w-full" : "size-12 shrink-0";
+  const visual = placeholderVisual(product);
+
+  return (
+    <span
+      className={`relative flex ${size} items-center justify-center overflow-hidden rounded-xl border border-white/[0.07] bg-gradient-to-br ${visual.gradient} text-white/85`}
+    >
+      {url && failedUrl !== url ? (
+        // Arbitrary user-supplied remote URL, so next/image is not suitable.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt={`${product.name} image`}
+          className="size-full object-cover"
+          onError={() => setFailedUrl(url)}
+          src={url}
+        />
+      ) : (
+        <span
+          aria-label={`${visual.label} placeholder`}
+          className="flex size-full items-center justify-center"
+          role="img"
+        >
+          <svg
+            aria-hidden="true"
+            className={large ? "size-16" : "size-6"}
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.6"
+            viewBox="0 0 24 24"
+          >
+            {visual.icon}
+          </svg>
+        </span>
+      )}
+    </span>
+  );
+}
+
+function placeholderVisual(product: Product): {
+  label: string;
+  gradient: string;
+  icon: ReactNode;
+} {
+  const text = `${product.category} ${product.type} ${product.subType}`.toLowerCase();
+  if (/lab|chromat|analy|hplc|science/.test(text)) {
+    return {
+      label: "Laboratory",
+      gradient: "from-violet-500/40 via-indigo-500/25 to-cyan-500/25",
+      icon: (
+        <>
+          <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" />
+          <path d="M7.5 15h9" />
+        </>
+      ),
+    };
+  }
+  if (/monitor|sensor|environment|air|quality/.test(text)) {
+    return {
+      label: "Monitoring",
+      gradient: "from-emerald-500/35 via-teal-500/25 to-sky-500/25",
+      icon: (
+        <>
+          <circle cx="12" cy="12" r="2" />
+          <path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4" />
+          <path d="M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5" />
+        </>
+      ),
+    };
+  }
+  if (/computer|laptop|desktop|pc/.test(text)) {
+    return {
+      label: "Computer",
+      gradient: "from-sky-500/35 via-indigo-500/25 to-blue-500/25",
+      icon: (
+        <>
+          <rect height="12" rx="1.5" width="16" x="4" y="5" />
+          <path d="M2 19h20" />
+        </>
+      ),
+    };
+  }
+  if (/network|router|switch/.test(text)) {
+    return {
+      label: "Networking",
+      gradient: "from-cyan-500/35 via-blue-500/25 to-indigo-500/25",
+      icon: (
+        <>
+          <rect height="6" rx="1.5" width="18" x="3" y="14" />
+          <path d="M7 14v-3M12 14V8M17 14v-3M7 17h.01M11 17h.01" />
+        </>
+      ),
+    };
+  }
+  return {
+    label: "Product",
+    gradient: "from-slate-500/30 via-indigo-500/15 to-slate-600/20",
+    icon: (
+      <>
+        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+        <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+      </>
+    ),
+  };
+}
+
+function ProductDetailModal({
+  product,
+  onClose,
+  onEdit,
+}: {
+  product: Product;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const stock = /^\d+$/.test(product.stockQuantity.trim())
+    ? Number(product.stockQuantity)
+    : null;
+  const availability = product.discontinued
+    ? "Discontinued"
+    : stock === null
+      ? "Not specified"
+      : stock > 0
+        ? `In Stock (${stock})`
+        : "Out of Stock";
+  const specs = product.specifications.filter((spec) => spec.key.trim());
+  const features = product.features.split("\n").map((f) => f.trim()).filter(Boolean);
+
+  const rows: [string, string][] = [
+    ["Brand", product.brand],
+    ["Model", product.model],
+    ["SKU", product.sku],
+    [
+      "Category",
+      [categoryOf(product), product.type, product.subType]
+        .filter(Boolean)
+        .join(" › "),
+    ],
+    [
+      "Price",
+      product.sellingPrice
+        ? `${product.sellingPrice} ${product.currency}`
+        : "",
+    ],
+    ["Availability", availability],
+    [
+      "Warranty",
+      product.warrantyMonths ? `${product.warrantyMonths} months` : "",
+    ],
+  ];
+
+  const lists: [string, string[]][] = [
+    ["Tags", product.tags],
+    ["Target customers", product.targetCustomers],
+    ["Use cases", product.useCases],
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/65 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        aria-labelledby="product-detail-title"
+        aria-modal="true"
+        className="my-auto w-full max-w-2xl rounded-2xl border border-white/[0.1] bg-[#111a2c] p-5 shadow-2xl shadow-black/40 sm:p-7"
+        role="dialog"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold text-white" id="product-detail-title">
+            {product.name}
+          </h2>
+          <button
+            aria-label="Close dialog"
+            autoFocus
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-white/[0.06] hover:text-white focus-visible:outline-2 focus-visible:outline-cyan-300"
+            onClick={onClose}
+            type="button"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div className="mt-4">
+          <ProductThumb large product={product} />
+        </div>
+        <p className="mt-4 text-sm leading-6 text-slate-300">{product.description}</p>
+
+        <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          {rows
+            .filter(([, value]) => value)
+            .map(([label, value]) => (
+              <div key={label}>
+                <dt className="text-[11px] text-slate-500">{label}</dt>
+                <dd className="text-sm text-slate-200">{value}</dd>
+              </div>
+            ))}
+        </dl>
+
+        {specs.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-xs font-semibold text-slate-300">Specifications</h3>
+            <dl className="mt-2 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+              {specs.map((spec, index) => (
+                <div key={`${spec.key}-${index}`}>
+                  <dt className="text-[11px] text-slate-500">{spec.key}</dt>
+                  <dd className="text-sm text-slate-200">{spec.value || "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
+        {features.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-xs font-semibold text-slate-300">Features</h3>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-200">
+              {features.map((feature) => (
+                <li key={feature}>{feature}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {lists.map(
+          ([label, values]) =>
+            values.length > 0 && (
+              <div className="mt-4" key={label}>
+                <h3 className="text-xs font-semibold text-slate-300">{label}</h3>
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {values.map((value) => (
+                    <li
+                      className="rounded-lg bg-cyan-400/10 px-2 py-1 text-xs text-cyan-100"
+                      key={value}
+                    >
+                      {value}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ),
+        )}
+
+        {[
+          ["Key benefits", product.keyBenefits],
+          ["Limitations", product.limitations],
+        ].map(
+          ([label, value]) =>
+            value.trim() && (
+              <div className="mt-4" key={label}>
+                <h3 className="text-xs font-semibold text-slate-300">{label}</h3>
+                <p className="mt-1 whitespace-pre-line text-sm text-slate-200">{value}</p>
+              </div>
+            ),
+        )}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            className="h-10 rounded-xl border border-white/[0.1] px-4 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
+            onClick={onClose}
+            type="button"
+          >
+            Close
+          </button>
+          <button
+            className="h-10 rounded-xl bg-indigo-500 px-4 text-xs font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+            onClick={onEdit}
+            type="button"
+          >
+            Edit Product
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 
