@@ -1,5 +1,7 @@
 import Link from "next/link";
 import AiOrb from "@/components/dashboard/ai-orb";
+import AuthenticatedPage from "@/features/auth/presentation/components/authenticated-page";
+import LogoutButton from "@/features/auth/presentation/components/logout-button";
 
 const metrics = [
   { label: "Conversations today", value: "24", change: "+12%" },
@@ -9,7 +11,8 @@ const metrics = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#080d1b] font-sans text-slate-100">
+    <AuthenticatedPage>
+      <main className="min-h-screen bg-[#080d1b] font-sans text-slate-100">
       <div className="mx-auto flex min-h-screen w-full max-w-[1600px]">
         <aside className="hidden w-[248px] shrink-0 flex-col border-r border-white/[0.07] bg-[#0a1020] px-5 py-7 lg:flex">
           <Link className="flex items-center gap-3 px-2" href="/">
@@ -99,6 +102,7 @@ export default function Home() {
               >
                 PS
               </div>
+              <LogoutButton />
             </div>
           </header>
 
@@ -234,7 +238,8 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </AuthenticatedPage>
   );
 }
 

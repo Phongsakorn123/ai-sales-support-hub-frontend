@@ -5,27 +5,31 @@ import { useLoginViewModel } from "../hooks/use-login-view-model";
 export default function LoginForm() {
   const {
     isPasswordVisible,
+    message,
+    messageType,
+    isSubmitting,
     passwordToggleLabel,
     togglePasswordVisibility,
     handleSubmit,
   } = useLoginViewModel();
 
   return (
-    <form className="space-y-5" noValidate onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit}>
       <div>
         <label
           className="mb-2 block text-sm font-medium text-slate-700"
-          htmlFor="email"
+          htmlFor="identifier"
         >
-          Email address
+          Username or Email
         </label>
         <input
-          autoComplete="email"
+          autoComplete="username"
           className="h-12 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-[15px] text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-          id="email"
-          name="email"
-          placeholder="you@company.com"
-          type="email"
+          id="identifier"
+          name="username"
+          placeholder="Enter your username or email"
+          required
+          type="text"
         />
       </div>
 
@@ -51,6 +55,7 @@ export default function LoginForm() {
             id="password"
             name="password"
             placeholder="Enter your password"
+            required
             type={isPasswordVisible ? "text" : "password"}
           />
           <button
@@ -79,13 +84,28 @@ export default function LoginForm() {
 
       <button
         className="flex h-12 w-full items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 active:bg-indigo-800"
+        disabled={isSubmitting}
         type="submit"
       >
-        Sign in
+        {isSubmitting
+          ? messageType === "success"
+            ? "Redirecting..."
+            : "Signing in..."
+          : "Sign in"}
       </button>
 
-      <p className="text-center text-xs leading-5 text-slate-500">
-        Demo access: sign-in checks are skipped. No account is authenticated.
+      <p
+        aria-live="polite"
+        className={`min-h-5 text-center text-sm ${
+          messageType === "success"
+            ? "text-emerald-700"
+            : messageType === "error"
+              ? "text-amber-800"
+              : "text-transparent"
+        }`}
+        role="status"
+      >
+        {message || " "}
       </p>
     </form>
   );
