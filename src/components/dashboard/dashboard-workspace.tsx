@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
+import VoiceSearch from "@/components/dashboard/voice-search";
 import LogoutButton from "@/features/auth/presentation/components/logout-button";
 
 type DashboardTab = "search" | "products" | "analytics";
@@ -153,6 +154,13 @@ export default function DashboardWorkspace() {
       searchText.trim()
         ? "Product search is a UI preview and is not connected to a search service yet."
         : "Describe what your customer needs to get started.",
+    );
+  }
+
+  function submitVoiceQuery(query: string): void {
+    setSearchText(query);
+    setSearchMessage(
+      "Voice transcript placed in Quick Search. Product search is a UI preview and is not connected to a search service yet.",
     );
   }
 
@@ -343,6 +351,8 @@ export default function DashboardWorkspace() {
                 </p>
               )}
             </form>
+
+            <VoiceSearch onSubmitQuery={submitVoiceQuery} />
         </section>
 
         <section

@@ -30,12 +30,34 @@ const particles = [
   { x: "97%", y: "87%", size: "2px", delay: "-5s", duration: "9s" },
 ];
 
-export default function AiOrb() {
+type AiOrbProps = {
+  listening?: boolean;
+  compact?: boolean;
+  decorative?: boolean;
+};
+
+export default function AiOrb({
+  listening = false,
+  compact = false,
+  decorative = false,
+}: AiOrbProps) {
+  const className = [
+    "ai-orb-stage",
+    compact ? "ai-orb-compact" : "",
+    listening ? "ai-orb-listening" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
-      aria-label="AI core, softly pulsing with floating light particles"
-      className="ai-orb-stage"
-      role="img"
+      {...(decorative
+        ? { "aria-hidden": true }
+        : {
+            "aria-label": "AI core, softly pulsing with floating light particles",
+            role: "img",
+          })}
+      className={className}
     >
       <div aria-hidden="true" className="ai-orb-ambient" />
       <div aria-hidden="true" className="ai-orb-rays">
@@ -88,6 +110,8 @@ export default function AiOrb() {
           <div className="ai-orb-core-shimmer" />
         </div>
       </div>
+      <div aria-hidden="true" className="ai-orb-wave ai-orb-wave-one" />
+      <div aria-hidden="true" className="ai-orb-wave ai-orb-wave-two" />
       <div aria-hidden="true" className="ai-orb-floor-glow" />
     </div>
   );
