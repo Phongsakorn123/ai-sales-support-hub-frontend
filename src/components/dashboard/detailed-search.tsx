@@ -13,6 +13,7 @@ const emptyCriteria: DetailCriteria = {
   maxBudget: "",
   currency: "THB",
   minRamGb: "",
+  features: "",
   purpose: "",
 };
 
@@ -208,6 +209,22 @@ export default function DetailedSearch({
             value={criteria.minRamGb}
           />
         </Field>
+        <div className="sm:col-span-2">
+          <Field
+            hint="Separate multiple features with commas."
+            htmlFor="ds-features"
+            label="Required features"
+          >
+            <input
+              className={fieldClass}
+              id="ds-features"
+              maxLength={300}
+              onChange={(event) => update("features", event.target.value)}
+              placeholder="e.g. fingerprint reader, backlit keyboard"
+              value={criteria.features}
+            />
+          </Field>
+        </div>
       </Group>
 
       <Group title="Results">

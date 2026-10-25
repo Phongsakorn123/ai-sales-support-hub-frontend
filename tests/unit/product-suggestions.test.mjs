@@ -15,6 +15,7 @@ const empty = {
   maxBudget: "",
   currency: "THB",
   minRamGb: "",
+  features: "",
   purpose: "",
 };
 
@@ -83,9 +84,18 @@ test("detail search maps only the selected fields into readable text", () => {
       maxBudget: "50000",
       currency: "THB",
       minRamGb: "16",
+      features: "SSD, fingerprint reader",
       purpose: "video editing",
     }),
-    "Laptop for video editing, preferred brand Dell, under 50000 THB, at least 16GB RAM.",
+    "Laptop for video editing, preferred brand Dell, under 50000 THB, at least 16GB RAM, required features: SSD, fingerprint reader.",
+  );
+  assert.equal(
+    buildDetailQuery({ ...empty, category: "Laptop", maxBudget: "3000" }),
+    "Laptop, under 3000 THB.",
+  );
+  assert.equal(
+    buildDetailQuery({ ...empty, category: "Laptop", maxBudget: "3000", currency: "USD" }),
+    "Laptop, under 3000 USD.",
   );
   assert.equal(buildDetailQuery({ ...empty, category: "Monitor" }), "Monitor.");
   assert.equal(buildDetailQuery({ ...empty, minRamGb: "8" }), "at least 8GB RAM.");
@@ -159,4 +169,14 @@ test("unexpected response shapes throw SuggestionFormatError", () => {
     () => parseSuggestionResponse(response({ recommendations: [{ name: 1 }] })),
     SuggestionFormatError,
   );
+});
+
+test("quick and detail search share one request builder and one response parser", async () => {
+  const { readFileSync } = await import("node:fs");
+  const workspace = readFileSync("src/components/dashboard/dashboard-workspace.tsx", "utf8");
+  assert.equal((workspace.match(/requestProductSuggestions\(/g) ?? []).length, 1);
+  assert.match(workspace, /runSuggestion\(searchText\.trim\(\)/);
+  assert.match(workspace, /onSearch=\{\(requirements, max, oos\) =>\s*void runSuggestion\(requirements, max, oos\)/);
+  const detail = readFileSync("src/components/dashboard/detailed-search.tsx", "utf8");
+  assert.doesNotMatch(detail, /requestProductSuggestions|fetch/);
 });

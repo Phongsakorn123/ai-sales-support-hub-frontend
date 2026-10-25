@@ -56,6 +56,7 @@ export type DetailCriteria = {
   maxBudget: string;
   currency: string;
   minRamGb: string;
+  features: string;
   purpose: string;
 };
 
@@ -90,6 +91,7 @@ export function validateDetailCriteria(
     criteria.brand,
     criteria.maxBudget,
     criteria.minRamGb,
+    criteria.features,
     criteria.purpose,
   ].some((value) => value.trim());
   if (!hasAny) {
@@ -123,6 +125,8 @@ export function buildDetailQuery(criteria: DetailCriteria): string {
   }
   const ram = criteria.minRamGb.trim();
   if (ram) parts.push(`at least ${Number(ram)}GB RAM`);
+  const features = criteria.features.trim();
+  if (features) parts.push(`required features: ${features}`);
   return parts.length > 0 ? `${parts.join(", ")}.` : "";
 }
 
