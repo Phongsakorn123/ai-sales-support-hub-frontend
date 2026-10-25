@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import ProductFormFields, {
   emptyProduct,
   validateProduct,
   type ProductFormValues,
 } from "@/components/dashboard/product-form";
+import SuggestionResults, {
+  type SuggestionState,
+} from "@/components/dashboard/suggestion-results";
+import {
+  buildRequest,
+  requestProductSuggestions,
+  SuggestionApiError,
+  validateRequirements,
+} from "@/lib/api/product-suggestions";
 import DetailedSearch from "@/components/dashboard/detailed-search";
 import VoiceSearch from "@/components/dashboard/voice-search";
 import {
@@ -71,9 +80,11 @@ export default function DashboardWorkspace() {
     message: string;
   } | null>(null);
   const [showProductErrors, setShowProductErrors] = useState(false);
-  const [searchResults, setSearchResults] = useState<
-    { product: Product; score: number; reason: string }[] | null
-  >(null);
+  const [suggestion, setSuggestion] = useState<SuggestionState>({ status: "idle" });
+  const [quickMaxProducts, setQuickMaxProducts] = useState(3);
+  const [quickIncludeOos, setQuickIncludeOos] = useState(false);
+  const lastSearch = useRef<{ requirements: string; max: number; oos: boolean } | null>(null);
+  const searchAbort = useRef<AbortController | null>(null);
   const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [detailProductId, setDetailProductId] = useState<number | null>(null);
   const productErrors = validateProduct(productForm);
@@ -249,56 +260,56 @@ export default function DashboardWorkspace() {
     }
   }
 
+  useEffect(() => () => searchAbort.current?.abort(), []);
+
+  async function runSuggestion(
+    requirements: string,
+    max: number,
+    oos: boolean,
+  ): Promise<void> {
+    if (suggestion.status === "loading") return;
+    lastSearch.current = { requirements, max, oos };
+    const controller = new AbortController();
+    searchAbort.current = controller;
+    setSuggestion({ status: "loading", requirements });
+    try {
+      const result = await requestProductSuggestions(
+        buildRequest(requirements, max, oos),
+        controller.signal,
+      );
+      setSuggestion({ status: "success", requirements, result });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setSuggestion({
+        status: "error",
+        requirements,
+        message:
+          error instanceof SuggestionApiError
+            ? error.message
+            : "Product search failed. Please try again.",
+      });
+    }
+  }
+
   function submitSearch(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    const query = searchText.trim();
-    if (!query) {
-      setSearchResults(null);
-      setSearchMessage("Describe what your customer needs to get started.");
+    const problem = validateRequirements(searchText);
+    if (problem) {
+      setSearchMessage(problem);
       return;
     }
+    setSearchMessage("");
+    void runSuggestion(searchText.trim(), quickMaxProducts, quickIncludeOos);
+  }
 
-    // Sample preview only: keyword overlap against the in-memory products,
-    // falling back to the first products so the result layout is always visible.
-    const words = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
-    const scored = products.map((product) => {
-      const haystack = [
-        product.name,
-        product.brand,
-        product.description,
-        product.category,
-        product.type,
-        product.subType,
-        ...product.tags,
-        ...product.useCases,
-      ]
-        .join(" ")
-        .toLowerCase();
-      const hits = words.filter((word) => haystack.includes(word));
-      return { product, hits };
-    });
-    const matched = scored.filter((item) => item.hits.length > 0);
-    const picked = (matched.length > 0 ? matched : scored).slice(0, 3);
-    setSearchResults(
-      picked.map(({ product, hits }, index) => ({
-        product,
-        score: Math.max(60, 96 - index * 9),
-        reason:
-          hits.length > 0
-            ? `Sample reasoning: matches your request on "${hits.join('", "')}" in the product details.`
-            : `Sample reasoning: shown as an example of how an AI explanation would appear for "${product.name}".`,
-      })),
-    );
-    setSearchMessage(
-      "Showing sample results for preview. Product search is not connected to a search service or AI model yet.",
-    );
+  function retrySearch(): void {
+    const last = lastSearch.current;
+    if (last) void runSuggestion(last.requirements, last.max, last.oos);
   }
 
   function submitVoiceQuery(query: string): void {
     setSearchText(query);
-    setSearchMessage(
-      "Voice transcript placed in Quick Search. Product search is a UI preview and is not connected to a search service yet.",
-    );
+    setSearchMessage("Voice transcript placed in Quick Search. Press Find Products to search.");
   }
 
   return (
@@ -499,12 +510,38 @@ export default function DashboardWorkspace() {
                 placeholder="Describe what your customer needs..."
                 value={searchText}
               />
+              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-300">
+                <label className="flex items-center gap-2">
+                  Maximum products
+                  <select
+                    className="rounded-lg border border-white/10 bg-[#080d1b] px-2 py-1 text-xs text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                    onChange={(event) => setQuickMaxProducts(Number(event.target.value))}
+                    value={quickMaxProducts}
+                  >
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    checked={quickIncludeOos}
+                    className="size-4 accent-indigo-500"
+                    onChange={(event) => setQuickIncludeOos(event.target.checked)}
+                    type="checkbox"
+                  />
+                  Include out-of-stock products
+                </label>
+              </div>
               <button
                 className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 text-sm font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                disabled={suggestion.status === "loading"}
                 type="submit"
               >
                 <SearchIcon />
-                Find Products
+                {suggestion.status === "loading" ? "Searching…" : "Find Products"}
               </button>
               {searchMessage && (
                 <p aria-live="polite" className="mt-3 text-center text-xs text-slate-400" role="status">
@@ -517,71 +554,22 @@ export default function DashboardWorkspace() {
 
             {searchMode === "detailed" && (
               <DetailedSearch
-                loadError={productsError}
-                onOpenProduct={setDetailProductId}
-                onRetry={reloadProducts}
-                products={products}
-                renderThumb={(product) => <ProductThumb product={product} />}
-                status={productsStatus}
+                brands={[...new Set(products.map((p) => p.brand).filter(Boolean))].sort()}
+                categories={[...new Set(products.map((p) => p.category).filter(Boolean))].sort()}
+                currencies={[...new Set(products.map((p) => p.currency).filter(Boolean))].sort()}
+                loading={suggestion.status === "loading"}
+                onReset={() => setSuggestion({ status: "idle" })}
+                onSearch={(requirements, max, oos) =>
+                  void runSuggestion(requirements, max, oos)
+                }
               />
             )}
 
-            {searchMode === "quick" && searchResults && (
-              <section aria-labelledby="search-results-title" className="mt-6">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-slate-100" id="search-results-title">
-                    {searchResults.length} products found{" "}
-                    <span className="text-xs font-normal text-slate-500">
-                      for “{searchText.trim()}”
-                    </span>
-                  </h3>
-                  <span className="rounded-md bg-amber-400/10 px-2 py-1 text-[11px] font-medium text-amber-200">
-                    Sample preview
-                  </span>
-                </div>
-                <ul className="mt-3 space-y-3">
-                  {searchResults.map(({ product, score, reason }) => {
-                    const stock = /^\d+$/.test(product.stockQuantity.trim())
-                      ? Number(product.stockQuantity)
-                      : null;
-                    return (
-                      <li key={product.id}>
-                        <button
-                          aria-label={`View details for ${product.name}`}
-                          className="flex w-full flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-left transition hover:border-indigo-300/30 hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-cyan-300 sm:flex-row sm:items-start"
-                          onClick={() => setDetailProductId(product.id)}
-                          type="button"
-                        >
-                          <ProductThumb product={product} />
-                          <span className="block min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-medium text-slate-100">
-                                {product.name}
-                              </span>
-                              <span className="rounded-md bg-emerald-400/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-200">
-                                {score}% match (sample)
-                              </span>
-                            </span>
-                            <span className="mt-1 block text-xs text-slate-400">
-                              {[product.brand, categoryOf(product), product.type]
-                                .filter(Boolean)
-                                .join(" · ")}
-                              {product.sellingPrice &&
-                                ` · ${product.sellingPrice} ${product.currency}`}
-                              {stock !== null &&
-                                ` · ${stock > 0 ? "In Stock" : "Out of Stock"}`}
-                            </span>
-                            <span className="mt-2 block rounded-lg border border-cyan-300/10 bg-cyan-400/[0.04] px-3 py-2 text-xs leading-5 text-slate-300">
-                              {reason}
-                            </span>
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            )}
+            <SuggestionResults
+              onRetry={retrySearch}
+              onUseDetailSearch={() => setSearchMode("detailed")}
+              state={suggestion}
+            />
 
             {searchMode === "quick" && (
               <VoiceSearch language={voiceLanguage} onSubmitQuery={submitVoiceQuery} />
@@ -922,6 +910,26 @@ export default function DashboardWorkspace() {
               </div>
             </form>
           </section>
+        </div>
+      )}
+      {suggestion.status === "loading" && (
+        <div
+          aria-live="polite"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          role="status"
+        >
+          <div className="flex w-full max-w-xs flex-col items-center rounded-2xl border border-white/[0.1] bg-[#111a2c] px-6 py-7 text-center shadow-2xl shadow-black/40">
+            <span
+              aria-hidden="true"
+              className="size-10 animate-spin rounded-full border-4 border-indigo-400/20 border-t-indigo-400 motion-reduce:animate-none"
+            />
+            <p className="mt-4 text-sm font-semibold text-slate-100">
+              Searching products…
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              This may take a few seconds.
+            </p>
+          </div>
         </div>
       )}
       {confirmAction && (
