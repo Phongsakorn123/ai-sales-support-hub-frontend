@@ -7,6 +7,13 @@ import ProductFormFields, {
   type ProductFormValues,
 } from "@/components/dashboard/product-form";
 import VoiceSearch from "@/components/dashboard/voice-search";
+import {
+  createProduct,
+  deleteProduct,
+  fetchProducts,
+  ProductsApiError,
+  updateProduct,
+} from "@/lib/api/products";
 import LogoutButton from "@/features/auth/presentation/components/logout-button";
 
 type DashboardTab = "search" | "products" | "analytics";
@@ -17,45 +24,6 @@ const tabs: { id: DashboardTab; label: string; icon: ReactNode }[] = [
   { id: "search", label: "Product Search", icon: <SearchIcon /> },
   { id: "products", label: "Manage Products", icon: <BoxIcon /> },
   { id: "analytics", label: "Analytics Dashboard", icon: <ChartIcon /> },
-];
-
-const initialProducts: Product[] = [
-  {
-    ...emptyProduct,
-    id: 1,
-    name: "DynaChrom system",
-    brand: "ThermoFisher",
-    description: "High-performance chromatography system for laboratories.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/HPLC_system_-_real.jpg/960px-HPLC_system_-_real.jpg",
-    category: "Laboratory",
-    type: "Chromatography",
-    subType: "HPLC",
-  },
-  {
-    ...emptyProduct,
-    id: 2,
-    name: "AeroSense Monitor",
-    brand: "Northstar",
-    description: "Continuous air-quality monitoring for commercial spaces.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/AXIS_D6310_Air_Quality_Sensor.jpg/960px-AXIS_D6310_Air_Quality_Sensor.jpg",
-    category: "Monitoring",
-    type: "Environment",
-    subType: "Air quality",
-  },
-  {
-    ...emptyProduct,
-    id: 3,
-    name: "Vertex Pro Analyzer",
-    brand: "Vertex",
-    description: "Compact analyzer designed for fast, accurate results.",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/SVAN_979_Sound_Level_Meter_and_Analyzer.jpg/960px-SVAN_979_Sound_Level_Meter_and_Analyzer.jpg",
-    category: "Laboratory",
-    type: "Analyzer",
-    subType: "Portable",
-  },
 ];
 
 const voiceLanguages = [
@@ -75,7 +43,12 @@ const inputClass =
 
 export default function DashboardWorkspace() {
   const [activeTab, setActiveTab] = useState<DashboardTab>("search");
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsStatus, setProductsStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [productsError, setProductsError] = useState("");
+  const [productsReload, setProductsReload] = useState(0);
   const [searchMode, setSearchMode] = useState<"quick" | "detailed">("quick");
   const [searchText, setSearchText] = useState("");
   const [searchMessage, setSearchMessage] = useState("");
@@ -86,6 +59,16 @@ export default function DashboardWorkspace() {
   const [productForm, setProductForm] =
     useState<ProductFormValues>(emptyProduct);
   const [productMessage, setProductMessage] = useState("");
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
+  const [confirmAction, setConfirmAction] = useState<
+    { kind: "update" } | { kind: "delete"; product: Product } | null
+  >(null);
+  const [notice, setNotice] = useState<{
+    tone: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
   const [showProductErrors, setShowProductErrors] = useState(false);
   const [searchResults, setSearchResults] = useState<
     { product: Product; score: number; reason: string }[] | null
@@ -109,6 +92,30 @@ export default function DashboardWorkspace() {
       setVoiceLanguage(saved as string);
     }
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchProducts(controller.signal)
+      .then((loaded) => {
+        setProducts(loaded);
+        setProductsStatus("ready");
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setProductsError(
+          error instanceof ProductsApiError
+            ? error.message
+            : "Could not load products. Please try again.",
+        );
+        setProductsStatus("error");
+      });
+    return () => controller.abort();
+  }, [productsReload]);
+
+  function reloadProducts(): void {
+    setProductsStatus("loading");
+    setProductsReload((count) => count + 1);
+  }
 
   function changeVoiceLanguage(code: string): void {
     setVoiceLanguage(code);
@@ -159,27 +166,86 @@ export default function DashboardWorkspace() {
 
   function saveProduct(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    if (isSavingProduct) return;
     if (Object.keys(productErrors).length > 0) {
       setShowProductErrors(true);
       setProductMessage("Please fix the highlighted fields before saving.");
       return;
     }
-
     if (editingProductId === null) {
-      setProducts((current) => [
-        ...current,
-        { ...productForm, id: Date.now() },
-      ]);
+      void persistProduct();
     } else {
-      setProducts((current) =>
-        current.map((product) =>
-          product.id === editingProductId
-            ? { ...product, ...productForm }
-            : product,
-        ),
-      );
+      setConfirmAction({ kind: "update" });
     }
-    setIsProductDialogOpen(false);
+  }
+
+  async function persistProduct(): Promise<void> {
+    if (isSavingProduct) return;
+    const isNew = editingProductId === null;
+    setConfirmAction(null);
+    setIsSavingProduct(true);
+    setProductMessage("");
+    try {
+      if (editingProductId === null) {
+        const created = await createProduct(productForm);
+        setProducts((current) => [...current, created]);
+      } else {
+        const updated = await updateProduct(editingProductId, productForm);
+        setProducts((current) =>
+          current.map((product) =>
+            product.id === updated.id ? updated : product,
+          ),
+        );
+      }
+      setIsProductDialogOpen(false);
+      setNotice({
+        tone: "success",
+        title: isNew ? "Product added" : "Product updated",
+        message: isNew
+          ? `"${productForm.name.trim()}" was added successfully.`
+          : `"${productForm.name.trim()}" was updated successfully.`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof ProductsApiError
+          ? error.message
+          : "The product could not be saved. Please try again.";
+      setProductMessage(message);
+      setNotice({
+        tone: "error",
+        title: isNew ? "Could not add product" : "Could not update product",
+        message,
+      });
+    } finally {
+      setIsSavingProduct(false);
+    }
+  }
+
+  async function removeProduct(product: Product): Promise<void> {
+    if (deletingProductId !== null) return;
+    setConfirmAction(null);
+    setDeletingProductId(product.id);
+    try {
+      await deleteProduct(product.id);
+      setProducts((current) => current.filter((item) => item.id !== product.id));
+      setDetailProductId((current) => (current === product.id ? null : current));
+      setNotice({
+        tone: "success",
+        title: "Product deleted",
+        message: `"${product.name}" was deleted.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        title: "Could not delete product",
+        message:
+          error instanceof ProductsApiError
+            ? error.message
+            : "The product could not be deleted. Please try again.",
+      });
+    } finally {
+      setDeletingProductId(null);
+    }
   }
 
   function submitSearch(event: FormEvent<HTMLFormElement>): void {
@@ -570,7 +636,8 @@ export default function DashboardWorkspace() {
               <p className="text-xs font-medium text-slate-300">
                 Product Catalog{" "}
                 <span className="text-slate-500">
-                  ({visibleProducts.length} of {products.length} products)
+                  {productsStatus === "ready" &&
+                    `(${visibleProducts.length} of ${products.length} products)`}
                 </span>
               </p>
               <span className="hidden text-[11px] text-slate-500 sm:block">
@@ -628,12 +695,9 @@ export default function DashboardWorkspace() {
                           </button>
                           <button
                             aria-label={`Delete ${product.name}`}
-                            className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-rose-300"
-                            onClick={() =>
-                              setProducts((current) =>
-                                current.filter((item) => item.id !== product.id),
-                              )
-                            }
+                            className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-rose-300 disabled:opacity-50"
+                            disabled={deletingProductId !== null}
+                            onClick={() => setConfirmAction({ kind: "delete", product })}
                             type="button"
                           >
                             <TrashIcon />
@@ -644,11 +708,33 @@ export default function DashboardWorkspace() {
                   </div>
                 </section>
               ))}
-              {visibleProducts.length === 0 && (
+              {productsStatus === "loading" && (
+                <p className="py-10 text-center text-sm text-slate-400" role="status">
+                  Loading products…
+                </p>
+              )}
+              {productsStatus === "error" && (
+                <div className="py-10 text-center" role="alert">
+                  <p className="text-sm font-medium text-rose-300">
+                    Could not load products
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">{productsError}</p>
+                  <button
+                    className="mt-3 h-9 rounded-xl border border-white/[0.1] px-4 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
+                    onClick={reloadProducts}
+                    type="button"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {productsStatus === "ready" && visibleProducts.length === 0 && (
                 <div className="py-10 text-center" role="status">
                   <p className="text-sm font-medium text-slate-300">No products found</p>
                   <p className="mt-1 text-xs text-slate-500">
-                    Try a different search or category, or add a new product.
+                    {products.length === 0
+                      ? "There are no products yet. Add a new product to get started."
+                      : "Try a different search or category, or add a new product."}
                   </p>
                 </div>
               )}
@@ -794,7 +880,7 @@ export default function DashboardWorkspace() {
                 </p>
               )}
               <p className="text-[11px] text-slate-500">
-                Products are kept in this browser session only; nothing is saved to a database yet.
+                Changes are saved to the product database when you confirm.
               </p>
               <div className="flex justify-end gap-2 pt-1">
                 <button
@@ -805,17 +891,135 @@ export default function DashboardWorkspace() {
                   Cancel
                 </button>
                 <button
-                  className="h-10 rounded-xl bg-indigo-500 px-4 text-xs font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                  className="h-10 rounded-xl bg-indigo-500 px-4 text-xs font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 disabled:opacity-60"
+                  disabled={isSavingProduct}
                   type="submit"
                 >
-                  {editingProductId === null ? "Create Product" : "Save Changes"}
+                  {isSavingProduct
+                    ? "Saving…"
+                    : editingProductId === null
+                      ? "Create Product"
+                      : "Save Changes"}
                 </button>
               </div>
             </form>
           </section>
         </div>
       )}
+      {confirmAction && (
+        <PopupDialog
+          actions={
+            <>
+              <button
+                className="h-10 rounded-xl border border-white/[0.1] px-4 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
+                onClick={() => setConfirmAction(null)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                autoFocus
+                className={`h-10 rounded-xl px-4 text-xs font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 ${
+                  confirmAction.kind === "delete"
+                    ? "bg-rose-500 hover:bg-rose-400"
+                    : "bg-indigo-500 hover:bg-indigo-400"
+                }`}
+                onClick={() =>
+                  confirmAction.kind === "delete"
+                    ? void removeProduct(confirmAction.product)
+                    : void persistProduct()
+                }
+                type="button"
+              >
+                {confirmAction.kind === "delete" ? "Delete" : "Update"}
+              </button>
+            </>
+          }
+          message={
+            confirmAction.kind === "delete"
+              ? `Delete "${confirmAction.product.name}"? This cannot be undone.`
+              : `Save your changes to "${productForm.name.trim()}"?`
+          }
+          onClose={() => setConfirmAction(null)}
+          title={
+            confirmAction.kind === "delete" ? "Confirm delete" : "Confirm update"
+          }
+          tone={confirmAction.kind === "delete" ? "error" : "info"}
+        />
+      )}
+      {notice && (
+        <PopupDialog
+          actions={
+            <button
+              autoFocus
+              className="h-10 rounded-xl bg-indigo-500 px-4 text-xs font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+              onClick={() => setNotice(null)}
+              type="button"
+            >
+              OK
+            </button>
+          }
+          message={notice.message}
+          onClose={() => setNotice(null)}
+          title={notice.title}
+          tone={notice.tone}
+        />
+      )}
     </main>
+  );
+}
+
+function PopupDialog({
+  title,
+  message,
+  tone,
+  actions,
+  onClose,
+}: {
+  title: string;
+  message: string;
+  tone: "success" | "error" | "info";
+  actions: ReactNode;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  const accent =
+    tone === "success"
+      ? "text-emerald-300"
+      : tone === "error"
+        ? "text-rose-300"
+        : "text-indigo-300";
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        aria-describedby="popup-message"
+        aria-labelledby="popup-title"
+        aria-modal="true"
+        className="w-full max-w-sm rounded-2xl border border-white/[0.1] bg-[#111a2c] p-6 text-center shadow-2xl shadow-black/40"
+        role="alertdialog"
+      >
+        <h2 className={`text-base font-semibold ${accent}`} id="popup-title">
+          {title}
+        </h2>
+        <p className="mt-2 break-words text-sm text-slate-300" id="popup-message">
+          {message}
+        </p>
+        <div className="mt-5 flex justify-center gap-2">{actions}</div>
+      </section>
+    </div>
   );
 }
 
