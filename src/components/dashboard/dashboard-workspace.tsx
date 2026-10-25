@@ -6,6 +6,7 @@ import ProductFormFields, {
   validateProduct,
   type ProductFormValues,
 } from "@/components/dashboard/product-form";
+import DetailedSearch from "@/components/dashboard/detailed-search";
 import VoiceSearch from "@/components/dashboard/voice-search";
 import {
   createProduct,
@@ -486,6 +487,8 @@ export default function DashboardWorkspace() {
                 </div>
               </div>
 
+              {searchMode === "quick" && (
+                <>
               <label className="sr-only" htmlFor="customer-needs">
                 Describe your customer needs
               </label>
@@ -508,9 +511,22 @@ export default function DashboardWorkspace() {
                   {searchMessage}
                 </p>
               )}
+                </>
+              )}
             </form>
 
-            {searchResults && (
+            {searchMode === "detailed" && (
+              <DetailedSearch
+                loadError={productsError}
+                onOpenProduct={setDetailProductId}
+                onRetry={reloadProducts}
+                products={products}
+                renderThumb={(product) => <ProductThumb product={product} />}
+                status={productsStatus}
+              />
+            )}
+
+            {searchMode === "quick" && searchResults && (
               <section aria-labelledby="search-results-title" className="mt-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold text-slate-100" id="search-results-title">
@@ -567,7 +583,9 @@ export default function DashboardWorkspace() {
               </section>
             )}
 
-            <VoiceSearch language={voiceLanguage} onSubmitQuery={submitVoiceQuery} />
+            {searchMode === "quick" && (
+              <VoiceSearch language={voiceLanguage} onSubmitQuery={submitVoiceQuery} />
+            )}
         </section>
 
         <section
