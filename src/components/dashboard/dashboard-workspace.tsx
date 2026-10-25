@@ -58,6 +58,12 @@ const initialProducts: Product[] = [
   },
 ];
 
+const voiceLanguages = [
+  { code: "th-TH", short: "TH", name: "ไทย (Thai)" },
+  { code: "en-US", short: "EN", name: "English" },
+];
+const VOICE_LANGUAGE_KEY = "voice-search-language";
+
 const UNCATEGORIZED = "Uncategorized";
 
 function categoryOf(product: { category: string }): string {
@@ -81,6 +87,10 @@ export default function DashboardWorkspace() {
     useState<ProductFormValues>(emptyProduct);
   const [productMessage, setProductMessage] = useState("");
   const [showProductErrors, setShowProductErrors] = useState(false);
+  const [searchResults, setSearchResults] = useState<
+    { product: Product; score: number; reason: string }[] | null
+  >(null);
+  const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [detailProductId, setDetailProductId] = useState<number | null>(null);
   const productErrors = validateProduct(productForm);
 
@@ -90,6 +100,20 @@ export default function DashboardWorkspace() {
     : "all";
   const detailProduct =
     products.find((product) => product.id === detailProductId) ?? null;
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(VOICE_LANGUAGE_KEY);
+    if (voiceLanguages.some((option) => option.code === saved)) {
+      // Restore the saved choice after hydration to avoid a server/client mismatch.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVoiceLanguage(saved as string);
+    }
+  }, []);
+
+  function changeVoiceLanguage(code: string): void {
+    setVoiceLanguage(code);
+    window.localStorage.setItem(VOICE_LANGUAGE_KEY, code);
+  }
 
   useEffect(() => {
     if (detailProductId === null) return;
@@ -160,10 +184,46 @@ export default function DashboardWorkspace() {
 
   function submitSearch(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    const query = searchText.trim();
+    if (!query) {
+      setSearchResults(null);
+      setSearchMessage("Describe what your customer needs to get started.");
+      return;
+    }
+
+    // Sample preview only: keyword overlap against the in-memory products,
+    // falling back to the first products so the result layout is always visible.
+    const words = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    const scored = products.map((product) => {
+      const haystack = [
+        product.name,
+        product.brand,
+        product.description,
+        product.category,
+        product.type,
+        product.subType,
+        ...product.tags,
+        ...product.useCases,
+      ]
+        .join(" ")
+        .toLowerCase();
+      const hits = words.filter((word) => haystack.includes(word));
+      return { product, hits };
+    });
+    const matched = scored.filter((item) => item.hits.length > 0);
+    const picked = (matched.length > 0 ? matched : scored).slice(0, 3);
+    setSearchResults(
+      picked.map(({ product, hits }, index) => ({
+        product,
+        score: Math.max(60, 96 - index * 9),
+        reason:
+          hits.length > 0
+            ? `Sample reasoning: matches your request on "${hits.join('", "')}" in the product details.`
+            : `Sample reasoning: shown as an example of how an AI explanation would appear for "${product.name}".`,
+      })),
+    );
     setSearchMessage(
-      searchText.trim()
-        ? "Product search is a UI preview and is not connected to a search service yet."
-        : "Describe what your customer needs to get started.",
+      "Showing sample results for preview. Product search is not connected to a search service or AI model yet.",
     );
   }
 
@@ -178,7 +238,29 @@ export default function DashboardWorkspace() {
     <main className="min-h-screen bg-[#080d1b] px-4 py-7 font-sans text-slate-100 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[1200px]">
         <header className="relative pb-7 text-center sm:pb-8">
-          <div className="absolute right-0 top-0">
+          <div className="absolute right-0 top-0 flex items-center gap-2">
+            <div
+              aria-label="Voice language"
+              className="inline-flex rounded-xl border border-white/[0.08] p-0.5"
+              role="group"
+            >
+              {voiceLanguages.map((option) => (
+                <button
+                  aria-pressed={voiceLanguage === option.code}
+                  className={`rounded-[10px] px-2.5 py-1.5 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-cyan-300 ${
+                    voiceLanguage === option.code
+                      ? "bg-indigo-500/25 text-white"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                  key={option.code}
+                  onClick={() => changeVoiceLanguage(option.code)}
+                  title={option.name}
+                  type="button"
+                >
+                  {option.short}
+                </button>
+              ))}
+            </div>
             <LogoutButton />
           </div>
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-cyan-300/80">
@@ -362,7 +444,64 @@ export default function DashboardWorkspace() {
               )}
             </form>
 
-            <VoiceSearch onSubmitQuery={submitVoiceQuery} />
+            {searchResults && (
+              <section aria-labelledby="search-results-title" className="mt-6">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-slate-100" id="search-results-title">
+                    {searchResults.length} products found{" "}
+                    <span className="text-xs font-normal text-slate-500">
+                      for “{searchText.trim()}”
+                    </span>
+                  </h3>
+                  <span className="rounded-md bg-amber-400/10 px-2 py-1 text-[11px] font-medium text-amber-200">
+                    Sample preview
+                  </span>
+                </div>
+                <ul className="mt-3 space-y-3">
+                  {searchResults.map(({ product, score, reason }) => {
+                    const stock = /^\d+$/.test(product.stockQuantity.trim())
+                      ? Number(product.stockQuantity)
+                      : null;
+                    return (
+                      <li key={product.id}>
+                        <button
+                          aria-label={`View details for ${product.name}`}
+                          className="flex w-full flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-left transition hover:border-indigo-300/30 hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-cyan-300 sm:flex-row sm:items-start"
+                          onClick={() => setDetailProductId(product.id)}
+                          type="button"
+                        >
+                          <ProductThumb product={product} />
+                          <span className="block min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-medium text-slate-100">
+                                {product.name}
+                              </span>
+                              <span className="rounded-md bg-emerald-400/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-200">
+                                {score}% match (sample)
+                              </span>
+                            </span>
+                            <span className="mt-1 block text-xs text-slate-400">
+                              {[product.brand, categoryOf(product), product.type]
+                                .filter(Boolean)
+                                .join(" · ")}
+                              {product.sellingPrice &&
+                                ` · ${product.sellingPrice} ${product.currency}`}
+                              {stock !== null &&
+                                ` · ${stock > 0 ? "In Stock" : "Out of Stock"}`}
+                            </span>
+                            <span className="mt-2 block rounded-lg border border-cyan-300/10 bg-cyan-400/[0.04] px-3 py-2 text-xs leading-5 text-slate-300">
+                              {reason}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+
+            <VoiceSearch language={voiceLanguage} onSubmitQuery={submitVoiceQuery} />
         </section>
 
         <section

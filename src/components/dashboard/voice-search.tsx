@@ -42,8 +42,10 @@ function getRecognitionConstructor(): RecognitionConstructor | undefined {
 }
 
 export default function VoiceSearch({
+  language,
   onSubmitQuery,
 }: {
+  language: string;
   onSubmitQuery: (query: string) => void;
 }) {
   const [status, setStatus] = useState<VoiceStatus>("idle");
@@ -81,7 +83,7 @@ export default function VoiceSearch({
     }
 
     const recognition = new Recognition();
-    recognition.lang = navigator.language || "en-US";
+    recognition.lang = language;
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.onstart = () => setStatus("listening");
@@ -139,6 +141,7 @@ export default function VoiceSearch({
         {statusText}
       </p>
       <p className="mt-1 text-[11px] text-slate-500">
+        Listening language: {language === "th-TH" ? "ไทย (Thai)" : "English"} — change it at the top right.
         Speech recognition depends on your browser and microphone permission.
       </p>
 
