@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import LoginForm from "@/features/auth/presentation/components/login-form";
 import LoginIllustration from "@/features/auth/presentation/components/login-illustration";
 
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
   description: "Sign in to discover products and empower your sales workflow.",
 };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  await connection();
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f7f8fc] px-4 py-6 font-sans text-slate-900 sm:px-8 sm:py-10">
       <div className="grid w-full max-w-6xl overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_24px_80px_-36px_rgba(27,39,76,0.25)] lg:min-h-[700px] lg:grid-cols-[1.05fr_0.95fr]">
