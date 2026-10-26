@@ -195,6 +195,11 @@ export default function SuggestionResults({
               using catalog matching rules.
             </p>
           )}
+          {state.result.retrievalMode === "keyword_fallback" && (
+            <p className="rounded-lg border border-amber-300/15 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-100">
+              Semantic retrieval is unavailable for this search. Results use keyword matching only.
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-slate-100">
               {state.result.recommendations.length}{" "}

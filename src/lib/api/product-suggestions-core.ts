@@ -3,6 +3,7 @@
 
 export type MatchType = "exact_match" | "alternative" | "insufficient_data";
 export type RankingSource = "ai" | "catalog_fallback";
+export type RetrievalMode = "hybrid" | "keyword_fallback";
 
 export type SupportingDocument = {
   documentId: string;
@@ -41,6 +42,7 @@ export type SuggestionResult = {
   exactMatchCount: number | null;
   model: string;
   rankingSource: RankingSource;
+  retrievalMode: RetrievalMode;
   disclaimer: string;
 };
 
@@ -244,6 +246,7 @@ export function parseSuggestionResponse(body: unknown): SuggestionResult {
         : null,
     model: typeof body.model === "string" ? body.model : "",
     rankingSource: body.ranking_source === "catalog_fallback" ? "catalog_fallback" : "ai",
+    retrievalMode: body.retrieval_mode === "hybrid" ? "hybrid" : "keyword_fallback",
     disclaimer: typeof body.disclaimer === "string" ? body.disclaimer : "",
   };
 }

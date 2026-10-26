@@ -154,6 +154,12 @@ test("catalog fallback and exact match count are preserved only when valid", () 
   );
 });
 
+test("retrieval mode distinguishes hybrid results from keyword-only fallback", () => {
+  assert.equal(parseSuggestionResponse(response({ retrieval_mode: "hybrid" })).retrievalMode, "hybrid");
+  assert.equal(parseSuggestionResponse(response({ retrieval_mode: "keyword_fallback" })).retrievalMode, "keyword_fallback");
+  assert.equal(parseSuggestionResponse(response({ retrieval_mode: "unknown" })).retrievalMode, "keyword_fallback");
+});
+
 test("empty recommendations parse as an empty list", () => {
   const parsed = parseSuggestionResponse(
     response({ recommendations: [], data_sufficiency: "insufficient" }),
