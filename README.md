@@ -35,7 +35,7 @@ docker compose up --build -d
 
 The frontend is available at <http://localhost:3001>, and the backend at <http://localhost:8002>. Compose configures the frontend to reach the backend at `http://backend:8000/api/v1` on the private Docker network.
 
-On first startup, Compose initializes the database, catalog, supporting demo documents, and local hybrid-search embeddings automatically. OpenRouter credentials are optional for startup; without them AI search shows catalog-matched fallback results instead of AI-ranked results. See the backend README to enable OpenRouter ranking.
+On first startup, Compose initializes the database, catalog, supporting demo documents, and local hybrid-search embeddings automatically. OpenRouter credentials are optional for startup; without a key AI search shows catalog-matched fallback results instead of AI-ranked results. To enable AI ranking, set only `OPENROUTER_API_KEY` in the backend `.env`; Compose selects the default free model. See the backend README for details.
 
 ## Environment variables
 
