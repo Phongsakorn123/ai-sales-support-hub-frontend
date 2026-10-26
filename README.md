@@ -27,13 +27,15 @@ Open <http://localhost:3000>. Start the backend separately and set `NEXT_PUBLIC_
 
 ## Run both services with Docker Compose
 
-The Compose file is in the sibling backend repository. Clone both repositories into sibling directories, configure the backend `.env` as described in its README, then run from the backend directory:
+The Compose file is in the sibling backend repository. Clone both repositories into sibling directories, then run from the backend directory:
 
 ```bash
 docker compose up --build -d
 ```
 
-The frontend is available at <http://localhost:3001>, and the backend at <http://localhost:8002>. Compose configures the frontend to reach the backend at `http://backend:8000/api/v1` on the private Docker network. Database migrations and initial catalog setup are required before first use; follow the backend quick-start commands.
+The frontend is available at <http://localhost:3001>, and the backend at <http://localhost:8002>. Compose configures the frontend to reach the backend at `http://backend:8000/api/v1` on the private Docker network.
+
+On first startup, Compose initializes the database, catalog, supporting demo documents, and local hybrid-search embeddings automatically. OpenRouter credentials are optional for startup; without them AI search shows catalog-matched fallback results instead of AI-ranked results. See the backend README to enable OpenRouter ranking.
 
 ## Environment variables
 
