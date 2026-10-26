@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { productImageUrl } from "@/lib/api/product-image-url";
 
 export interface ProductSpec {
   key: string;
@@ -426,7 +427,7 @@ export default function ProductFormFields({
                 alt="Product preview"
                 className="max-h-full max-w-full object-contain"
                 onError={() => setImageFailed(imageUrl)}
-                src={imageUrl}
+                src={productImageUrl(imageUrl)}
               />
             )}
           </div>

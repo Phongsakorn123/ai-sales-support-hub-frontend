@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/product-suggestions";
 import DetailedSearch from "@/components/dashboard/detailed-search";
 import VoiceSearch from "@/components/dashboard/voice-search";
+import { productImageUrl } from "@/lib/api/product-image-url";
 import {
   createProduct,
   deleteProduct,
@@ -1157,7 +1158,7 @@ function ProductThumb({
               : "size-full object-contain"
           }
           onError={() => setFailedUrl(url)}
-          src={url}
+          src={productImageUrl(url)}
         />
       ) : (
         <span
