@@ -1,10 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
-import {
-  registerAccount,
-  RegistrationApiError,
-} from "@/lib/api/register";
+import { registerAccount, RegistrationApiError } from "@/lib/api/register";
 
 export interface RegisterViewModel {
   isPasswordVisible: boolean;
@@ -25,7 +22,9 @@ export function useRegisterViewModel(): RegisterViewModel {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     event.preventDefault();
     if (submissionInProgress.current) {
       return;

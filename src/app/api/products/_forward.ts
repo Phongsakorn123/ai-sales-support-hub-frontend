@@ -2,8 +2,6 @@ export function errorResponse(message: string, status: number): Response {
   return Response.json({ detail: message }, { status });
 }
 
-// Forwards one mutation to the backend, passing through the Bearer token and
-// the backend's status/body so validation and conflict errors reach the UI.
 export async function forwardProductRequest(
   request: Request,
   path: string,

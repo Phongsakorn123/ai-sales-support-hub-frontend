@@ -114,10 +114,13 @@ export default function AuthenticatedPage({
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      clearAccessToken();
-      router.replace("/login");
-    }, Math.max(0, expiresAt - Date.now()));
+    const timeout = window.setTimeout(
+      () => {
+        clearAccessToken();
+        router.replace("/login");
+      },
+      Math.max(0, expiresAt - Date.now()),
+    );
 
     return () => window.clearTimeout(timeout);
   }, [router, sessionStatus]);

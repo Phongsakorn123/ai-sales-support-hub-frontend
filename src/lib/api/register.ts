@@ -11,9 +11,7 @@ interface RegisterPayload {
   password: string;
 }
 
-export async function registerAccount(
-  payload: RegisterPayload,
-): Promise<void> {
+export async function registerAccount(payload: RegisterPayload): Promise<void> {
   let response: Response;
   try {
     response = await fetch("/api/auth/register", {

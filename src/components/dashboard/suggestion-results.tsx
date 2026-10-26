@@ -37,7 +37,9 @@ function RequirementList({
   if (items.length === 0) return null;
   return (
     <div>
-      <p className={`text-[11px] font-semibold uppercase tracking-wide ${tone}`}>
+      <p
+        className={`text-[11px] font-semibold uppercase tracking-wide ${tone}`}
+      >
         {title}
       </p>
       <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-slate-300">
@@ -158,7 +160,11 @@ export default function SuggestionResults({
   if (state.status === "idle") return null;
 
   return (
-    <section aria-labelledby="ai-results-title" className="mt-6" id="ai-results">
+    <section
+      aria-labelledby="ai-results-title"
+      className="mt-6"
+      id="ai-results"
+    >
       <h3 className="sr-only" id="ai-results-title">
         Search results
       </h3>
@@ -197,19 +203,23 @@ export default function SuggestionResults({
           )}
           {state.result.retrievalMode === "keyword_fallback" && (
             <p className="rounded-lg border border-amber-300/15 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-100">
-              Semantic retrieval is unavailable for this search. Results use keyword matching only.
+              Semantic retrieval is unavailable for this search. Results use
+              keyword matching only.
             </p>
           )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-slate-100">
               {state.result.recommendations.length}{" "}
-              {state.result.recommendations.length === 1 ? "product" : "products"}{" "}
+              {state.result.recommendations.length === 1
+                ? "product"
+                : "products"}{" "}
               returned
             </h4>
             {state.result.exactMatchCount !== null && (
               <span className="text-xs text-slate-300">
                 {state.result.exactMatchCount} exact{" "}
-                {state.result.exactMatchCount === 1 ? "match" : "matches"} found.
+                {state.result.exactMatchCount === 1 ? "match" : "matches"}{" "}
+                found.
               </span>
             )}
           </div>
@@ -254,7 +264,9 @@ export default function SuggestionResults({
             </ul>
           )}
           {state.result.disclaimer && (
-            <p className="text-[11px] text-slate-500">{state.result.disclaimer}</p>
+            <p className="text-[11px] text-slate-500">
+              {state.result.disclaimer}
+            </p>
           )}
         </div>
       )}

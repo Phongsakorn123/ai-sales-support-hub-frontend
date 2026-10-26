@@ -91,9 +91,7 @@ export default function LoginIllustration() {
               (height, index) => (
                 <span
                   className={`w-full rounded-t-md ${
-                    index === 9
-                      ? "bg-indigo-600"
-                      : "bg-indigo-100"
+                    index === 9 ? "bg-indigo-600" : "bg-indigo-100"
                   }`}
                   key={index}
                   style={{ height: `${height}%` }}

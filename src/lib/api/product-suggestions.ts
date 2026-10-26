@@ -20,15 +20,17 @@ export class SuggestionApiError extends Error {
 
 function statusMessage(status: number): string {
   if (status === 401) return "Your session has expired. Please sign in again.";
-  if (status === 403) return "Your account is not allowed to use product search.";
-  if (status === 422) return "The search request was not accepted. Check the requirements and try again.";
-  if (status === 503) return "The AI product search service is not available right now.";
-  if (status === 502) return "The AI service failed or timed out. Please try again.";
+  if (status === 403)
+    return "Your account is not allowed to use product search.";
+  if (status === 422)
+    return "The search request was not accepted. Check the requirements and try again.";
+  if (status === 503)
+    return "The AI product search service is not available right now.";
+  if (status === 502)
+    return "The AI service failed or timed out. Please try again.";
   return "Product search failed. Please try again.";
 }
 
-// Goes through the Next proxy so the Bearer token is attached by the
-// existing protected fetch; the browser never talks to the LLM provider.
 export async function requestProductSuggestions(
   request: SuggestionRequest,
   signal?: AbortSignal,
@@ -42,9 +44,16 @@ export async function requestProductSuggestions(
       signal,
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    if (error instanceof Error && error.name === "AuthenticationRequiredError") {
-      throw new SuggestionApiError("Sign in is required to search products.", "auth");
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
+    if (
+      error instanceof Error &&
+      error.name === "AuthenticationRequiredError"
+    ) {
+      throw new SuggestionApiError(
+        "Sign in is required to search products.",
+        "auth",
+      );
     }
     throw new SuggestionApiError(
       "Could not reach the server. Check your connection and try again.",
@@ -69,6 +78,9 @@ export async function requestProductSuggestions(
     if (error instanceof SuggestionFormatError) {
       throw new SuggestionApiError(error.message, "format");
     }
-    throw new SuggestionApiError("The server returned an unreadable response.", "format");
+    throw new SuggestionApiError(
+      "The server returned an unreadable response.",
+      "format",
+    );
   }
 }

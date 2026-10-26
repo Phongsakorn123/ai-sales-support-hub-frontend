@@ -69,7 +69,9 @@ export async function loginAccount(
   }
 
   if (response.status === 400 || response.status === 422) {
-    throw new LoginApiError("Please enter your username or email and password.");
+    throw new LoginApiError(
+      "Please enter your username or email and password.",
+    );
   }
 
   if (response.status >= 500) {

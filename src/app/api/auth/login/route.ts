@@ -28,15 +28,12 @@ export async function POST(request: Request): Promise<Response> {
 
   let backendResponse: Response;
   try {
-    backendResponse = await fetch(
-      new URL("/api/v1/auth/login", apiBaseUrl),
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ username, password }),
-        cache: "no-store",
-      },
-    );
+    backendResponse = await fetch(new URL("/api/v1/auth/login", apiBaseUrl), {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ username, password }),
+      cache: "no-store",
+    });
   } catch {
     return errorResponse(
       "The sign-in service is temporarily unavailable. Please try again later.",
@@ -49,7 +46,10 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (backendResponse.status === 422) {
-    return errorResponse("Please enter your username or email and password.", 422);
+    return errorResponse(
+      "Please enter your username or email and password.",
+      422,
+    );
   }
 
   if (backendResponse.status >= 500) {
@@ -67,11 +67,17 @@ export async function POST(request: Request): Promise<Response> {
   try {
     tokenResponse = await backendResponse.json();
   } catch {
-    return errorResponse("The sign-in service returned an invalid response.", 502);
+    return errorResponse(
+      "The sign-in service returned an invalid response.",
+      502,
+    );
   }
 
   if (!isLoginTokenResponse(tokenResponse)) {
-    return errorResponse("The sign-in service returned an invalid response.", 502);
+    return errorResponse(
+      "The sign-in service returned an invalid response.",
+      502,
+    );
   }
 
   return Response.json(tokenResponse);

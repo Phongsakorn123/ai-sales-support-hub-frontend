@@ -29,11 +29,15 @@ type SpeechWindow = Window & {
 type VoiceStatus = "idle" | "listening" | "error";
 
 const errorMessages: Record<string, string> = {
-  "not-allowed": "Microphone permission was denied. Allow microphone access in your browser settings and try again.",
-  "service-not-allowed": "Microphone permission was denied. Allow microphone access in your browser settings and try again.",
+  "not-allowed":
+    "Microphone permission was denied. Allow microphone access in your browser settings and try again.",
+  "service-not-allowed":
+    "Microphone permission was denied. Allow microphone access in your browser settings and try again.",
   "no-speech": "No speech was detected. Click the orb and try speaking again.",
-  "audio-capture": "No microphone was found. Connect a microphone and try again.",
-  network: "The browser's speech service could not be reached. Check your connection and try again.",
+  "audio-capture":
+    "No microphone was found. Connect a microphone and try again.",
+  network:
+    "The browser's speech service could not be reached. Check your connection and try again.",
 };
 
 function getRecognitionConstructor(): RecognitionConstructor | undefined {
@@ -99,7 +103,8 @@ export default function VoiceSearch({
       if (event.error === "aborted") return;
       setStatus("error");
       setError(
-        errorMessages[event.error] ?? `Voice recognition failed (${event.error}).`,
+        errorMessages[event.error] ??
+          `Voice recognition failed (${event.error}).`,
       );
     };
     recognition.onend = () => {
@@ -137,12 +142,17 @@ export default function VoiceSearch({
       >
         <AiOrb compact decorative listening={listening} />
       </button>
-      <p aria-live="polite" className="-mt-2 text-sm font-medium text-cyan-200" role="status">
+      <p
+        aria-live="polite"
+        className="-mt-2 text-sm font-medium text-cyan-200"
+        role="status"
+      >
         {statusText}
       </p>
       <p className="mt-1 text-[11px] text-slate-500">
-        Listening language: {language === "th-TH" ? "ไทย (Thai)" : "English"} — change it at the top right.
-        Speech recognition depends on your browser and microphone permission.
+        Listening language: {language === "th-TH" ? "ไทย (Thai)" : "English"} —
+        change it at the top right. Speech recognition depends on your browser
+        and microphone permission.
       </p>
 
       {error && (
@@ -155,7 +165,11 @@ export default function VoiceSearch({
         aria-live="polite"
         className="mx-auto mt-4 min-h-14 max-w-xl rounded-xl border border-cyan-300/15 bg-cyan-400/[0.04] px-4 py-3 text-sm text-slate-100"
       >
-        {transcript || <span className="text-slate-500">Your recognized speech will appear here.</span>}
+        {transcript || (
+          <span className="text-slate-500">
+            Your recognized speech will appear here.
+          </span>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap justify-center gap-2">

@@ -23,7 +23,9 @@ export function useLoginViewModel(): LoginViewModel {
   const [messageType, setMessageType] = useState<"success" | "error" | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     event.preventDefault();
     if (submissionInProgress.current) {
       return;

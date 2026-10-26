@@ -54,7 +54,8 @@ export default function AiOrb({
       {...(decorative
         ? { "aria-hidden": true }
         : {
-            "aria-label": "AI core, softly pulsing with floating light particles",
+            "aria-label":
+              "AI core, softly pulsing with floating light particles",
             role: "img",
           })}
       className={className}

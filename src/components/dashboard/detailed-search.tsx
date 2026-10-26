@@ -35,7 +35,10 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-slate-300" htmlFor={htmlFor}>
+      <label
+        className="mb-1.5 block text-xs font-medium text-slate-300"
+        htmlFor={htmlFor}
+      >
         {label}
       </label>
       {children}
@@ -170,7 +173,11 @@ export default function DetailedSearch({
       </Group>
 
       <Group title="Budget and specifications">
-        <Field error={visible.maxBudget} htmlFor="ds-budget" label="Maximum budget">
+        <Field
+          error={visible.maxBudget}
+          htmlFor="ds-budget"
+          label="Maximum budget"
+        >
           <input
             className={fieldClass}
             id="ds-budget"
@@ -197,7 +204,11 @@ export default function DetailedSearch({
             ))}
           </select>
         </Field>
-        <Field error={visible.minRamGb} htmlFor="ds-ram" label="Minimum RAM (GB)">
+        <Field
+          error={visible.minRamGb}
+          htmlFor="ds-ram"
+          label="Minimum RAM (GB)"
+        >
           <input
             className={fieldClass}
             id="ds-ram"

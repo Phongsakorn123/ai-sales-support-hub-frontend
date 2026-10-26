@@ -3,7 +3,6 @@ import { errorResponse, forwardProductRequest } from "./_forward";
 const PAGE_SIZE = 100;
 const MAX_PAGES = 100;
 
-
 export async function GET(request: Request): Promise<Response> {
   const authorization = request.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ")) {
@@ -14,7 +13,6 @@ export async function GET(request: Request): Promise<Response> {
     process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081";
   const products: unknown[] = [];
 
-  // The backend caps `limit` at 100, so page until a short page is returned.
   for (let page = 0; page < MAX_PAGES; page += 1) {
     const url = new URL("/api/v1/products", apiBaseUrl);
     url.searchParams.set("limit", String(PAGE_SIZE));
@@ -48,10 +46,16 @@ export async function GET(request: Request): Promise<Response> {
     try {
       pageItems = await backendResponse.json();
     } catch {
-      return errorResponse("The product service returned an invalid response.", 502);
+      return errorResponse(
+        "The product service returned an invalid response.",
+        502,
+      );
     }
     if (!Array.isArray(pageItems)) {
-      return errorResponse("The product service returned an invalid response.", 502);
+      return errorResponse(
+        "The product service returned an invalid response.",
+        502,
+      );
     }
 
     products.push(...pageItems);

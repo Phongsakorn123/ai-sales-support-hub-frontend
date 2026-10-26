@@ -19,14 +19,15 @@ function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-// Money may be serialized as a string ("25000.00") or a number.
 function amount(value: unknown): string {
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return typeof value === "string" ? value : "";
 }
 
 function integer(value: unknown): string {
-  return typeof value === "number" && Number.isInteger(value) ? String(value) : "";
+  return typeof value === "number" && Number.isInteger(value)
+    ? String(value)
+    : "";
 }
 
 function strings(value: unknown): string[] {
@@ -87,9 +88,16 @@ export async function fetchProducts(
   try {
     response = await fetchProtectedApi("/api/products", { signal });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    if (error instanceof Error && error.name === "AuthenticationRequiredError") {
-      throw new ProductsApiError("Sign in is required to view products.", "auth");
+    if (error instanceof DOMException && error.name === "AbortError")
+      throw error;
+    if (
+      error instanceof Error &&
+      error.name === "AuthenticationRequiredError"
+    ) {
+      throw new ProductsApiError(
+        "Sign in is required to view products.",
+        "auth",
+      );
     }
     throw new ProductsApiError(
       "Could not reach the server. Check your connection and try again.",
@@ -118,10 +126,16 @@ export async function fetchProducts(
   try {
     body = await response.json();
   } catch {
-    throw new ProductsApiError("The server returned an unreadable response.", "format");
+    throw new ProductsApiError(
+      "The server returned an unreadable response.",
+      "format",
+    );
   }
   if (!Array.isArray(body)) {
-    throw new ProductsApiError("The server returned an unexpected response.", "format");
+    throw new ProductsApiError(
+      "The server returned an unexpected response.",
+      "format",
+    );
   }
   return body.map(mapProduct);
 }
@@ -136,8 +150,6 @@ function optionalNumber(value: string): number | null {
   return trimmed ? Number(trimmed) : null;
 }
 
-// Builds the backend ProductCreate/ProductUpdate body. Cleared optional
-// fields are sent as null so an edit can really remove them.
 function toPayload(values: ProductFormValues): Json {
   return {
     name: values.name.trim(),
@@ -171,9 +183,12 @@ function toPayload(values: ProductFormValues): Json {
 }
 
 async function failureMessage(response: Response): Promise<string> {
-  if (response.status === 401) return "Your session has expired. Please sign in again.";
-  if (response.status === 403) return "Your account is not allowed to change products.";
-  if (response.status === 404) return "This product no longer exists. Reload the list.";
+  if (response.status === 401)
+    return "Your session has expired. Please sign in again.";
+  if (response.status === 403)
+    return "Your account is not allowed to change products.";
+  if (response.status === 404)
+    return "This product no longer exists. Reload the list.";
   if (response.status === 409) return "A product with this SKU already exists.";
   if (response.status === 422) {
     try {
@@ -183,25 +198,27 @@ async function failureMessage(response: Response): Promise<string> {
         const field = first.loc?.[first.loc.length - 1];
         return `Invalid value${field ? ` for ${String(field)}` : ""}: ${first.msg ?? "rejected by server"}.`;
       }
-    } catch {
-      // fall through to the generic message
-    }
+    } catch {}
     return "The server rejected the product data.";
   }
-  if (response.status === 503) return "The product service is unavailable. Please try again.";
+  if (response.status === 503)
+    return "The product service is unavailable. Please try again.";
   return "The product could not be saved. Please try again.";
 }
 
-async function sendProduct(
-  path: string,
-  init: RequestInit,
-): Promise<Response> {
+async function sendProduct(path: string, init: RequestInit): Promise<Response> {
   let response: Response;
   try {
     response = await fetchProtectedApi(path, init);
   } catch (error) {
-    if (error instanceof Error && error.name === "AuthenticationRequiredError") {
-      throw new ProductsApiError("Sign in is required to change products.", "auth");
+    if (
+      error instanceof Error &&
+      error.name === "AuthenticationRequiredError"
+    ) {
+      throw new ProductsApiError(
+        "Sign in is required to change products.",
+        "auth",
+      );
     }
     throw new ProductsApiError(
       "Could not reach the server. Check your connection and try again.",
@@ -222,7 +239,10 @@ async function readProduct(response: Response): Promise<CatalogProduct> {
     return mapProduct(await response.json());
   } catch (error) {
     if (error instanceof ProductsApiError) throw error;
-    throw new ProductsApiError("The server returned an unreadable response.", "format");
+    throw new ProductsApiError(
+      "The server returned an unreadable response.",
+      "format",
+    );
   }
 }
 

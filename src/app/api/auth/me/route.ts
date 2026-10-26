@@ -13,14 +13,11 @@ export async function GET(request: Request): Promise<Response> {
 
   let backendResponse: Response;
   try {
-    backendResponse = await fetch(
-      new URL("/api/v1/auth/me", apiBaseUrl),
-      {
-        method: "GET",
-        headers: { Authorization: authorization },
-        cache: "no-store",
-      },
-    );
+    backendResponse = await fetch(new URL("/api/v1/auth/me", apiBaseUrl), {
+      method: "GET",
+      headers: { Authorization: authorization },
+      cache: "no-store",
+    });
   } catch {
     return errorResponse(
       "The authentication service is temporarily unavailable. Please try again.",

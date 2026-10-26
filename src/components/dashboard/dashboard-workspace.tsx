@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import ProductFormFields, {
   emptyProduct,
   validateProduct,
@@ -71,7 +77,9 @@ export default function DashboardWorkspace() {
     useState<ProductFormValues>(emptyProduct);
   const [productMessage, setProductMessage] = useState("");
   const [isSavingProduct, setIsSavingProduct] = useState(false);
-  const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(
+    null,
+  );
   const [confirmAction, setConfirmAction] = useState<
     { kind: "update" } | { kind: "delete"; product: Product } | null
   >(null);
@@ -81,10 +89,16 @@ export default function DashboardWorkspace() {
     message: string;
   } | null>(null);
   const [showProductErrors, setShowProductErrors] = useState(false);
-  const [suggestion, setSuggestion] = useState<SuggestionState>({ status: "idle" });
+  const [suggestion, setSuggestion] = useState<SuggestionState>({
+    status: "idle",
+  });
   const [quickMaxProducts, setQuickMaxProducts] = useState(3);
   const [quickIncludeOos, setQuickIncludeOos] = useState(false);
-  const lastSearch = useRef<{ requirements: string; max: number; oos: boolean } | null>(null);
+  const lastSearch = useRef<{
+    requirements: string;
+    max: number;
+    oos: boolean;
+  } | null>(null);
   const searchAbort = useRef<AbortController | null>(null);
   const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [detailProductId, setDetailProductId] = useState<number | null>(null);
@@ -105,24 +119,32 @@ export default function DashboardWorkspace() {
   const inventoryValueByCurrency = products.reduce((totals, product) => {
     const price = Number(product.sellingPrice);
     const quantity = Number(product.stockQuantity);
-    if (Number.isFinite(price) && price > 0 && Number.isInteger(quantity) && quantity > 0) {
-      const currency = /^[A-Z]{3}$/.test(product.currency) ? product.currency : "THB";
+    if (
+      Number.isFinite(price) &&
+      price > 0 &&
+      Number.isInteger(quantity) &&
+      quantity > 0
+    ) {
+      const currency = /^[A-Z]{3}$/.test(product.currency)
+        ? product.currency
+        : "THB";
       totals.set(currency, (totals.get(currency) ?? 0) + price * quantity);
     }
     return totals;
   }, new Map<string, number>());
-  const productCategories = [...products.reduce((counts, product) => {
-    const category = categoryOf(product);
-    counts.set(category, (counts.get(category) ?? 0) + 1);
-    return counts;
-  }, new Map<string, number>())]
+  const productCategories = [
+    ...products.reduce((counts, product) => {
+      const category = categoryOf(product);
+      counts.set(category, (counts.get(category) ?? 0) + 1);
+      return counts;
+    }, new Map<string, number>()),
+  ]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, 5);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(VOICE_LANGUAGE_KEY);
     if (voiceLanguages.some((option) => option.code === saved)) {
-      // Restore the saved choice after hydration to avoid a server/client mismatch.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVoiceLanguage(saved as string);
     }
@@ -170,8 +192,9 @@ export default function DashboardWorkspace() {
     const query = productQuery.trim().toLowerCase();
     const matchesQuery =
       !query ||
-      [product.name, product.brand, product.description]
-        .some((value) => value.toLowerCase().includes(query));
+      [product.name, product.brand, product.description].some((value) =>
+        value.toLowerCase().includes(query),
+      );
     const matchesCategory =
       activeCategoryFilter === "all" ||
       categoryOf(product) === activeCategoryFilter;
@@ -189,11 +212,7 @@ export default function DashboardWorkspace() {
 
   function openProductDialog(product?: Product): void {
     setEditingProductId(product?.id ?? null);
-    setProductForm(
-      product
-        ? { ...emptyProduct, ...product }
-        : emptyProduct,
-    );
+    setProductForm(product ? { ...emptyProduct, ...product } : emptyProduct);
     setProductMessage("");
     setShowProductErrors(false);
     setIsProductDialogOpen(true);
@@ -262,8 +281,12 @@ export default function DashboardWorkspace() {
     setDeletingProductId(product.id);
     try {
       await deleteProduct(product.id);
-      setProducts((current) => current.filter((item) => item.id !== product.id));
-      setDetailProductId((current) => (current === product.id ? null : current));
+      setProducts((current) =>
+        current.filter((item) => item.id !== product.id),
+      );
+      setDetailProductId((current) =>
+        current === product.id ? null : current,
+      );
       setNotice({
         tone: "success",
         title: "Product deleted",
@@ -332,7 +355,9 @@ export default function DashboardWorkspace() {
 
   function submitVoiceQuery(query: string): void {
     setSearchText(query);
-    setSearchMessage("Voice transcript placed in Quick Search. Press Find Products to search.");
+    setSearchMessage(
+      "Voice transcript placed in Quick Search. Press Find Products to search.",
+    );
   }
 
   return (
@@ -405,9 +430,10 @@ export default function DashboardWorkspace() {
                     (item) => item.id === tab.id,
                   );
                   const direction = event.key === "ArrowRight" ? 1 : -1;
-                  const nextTab = tabs[
-                    (currentIndex + direction + tabs.length) % tabs.length
-                  ];
+                  const nextTab =
+                    tabs[
+                      (currentIndex + direction + tabs.length) % tabs.length
+                    ];
                   setActiveTab(nextTab.id);
                   document.getElementById(`${nextTab.id}-tab`)?.focus();
                 }}
@@ -423,434 +449,513 @@ export default function DashboardWorkspace() {
         </nav>
 
         <section
-            hidden={activeTab !== "search"}
-            aria-labelledby="search-title"
-            className="rounded-2xl border border-white/[0.08] bg-[#0d1425] p-5 shadow-xl shadow-black/10 sm:p-7"
-            id="search-panel"
-            role="tabpanel"
-            tabIndex={0}
-          >
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-200">
-                <SearchIcon />
-              </span>
-              <div>
-                <h2 className="text-base font-semibold text-slate-100" id="search-title">
-                  AI-Powered Product Search
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-slate-400">
-                  Use natural language to find products, select a model for
-                  inference, and export results with AI reasoning.
-                </p>
-              </div>
+          hidden={activeTab !== "search"}
+          aria-labelledby="search-title"
+          className="rounded-2xl border border-white/[0.08] bg-[#0d1425] p-5 shadow-xl shadow-black/10 sm:p-7"
+          id="search-panel"
+          role="tabpanel"
+          tabIndex={0}
+        >
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-200">
+              <SearchIcon />
+            </span>
+            <div>
+              <h2
+                className="text-base font-semibold text-slate-100"
+                id="search-title"
+              >
+                AI-Powered Product Search
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                Use natural language to find products, select a model for
+                inference, and export results with AI reasoning.
+              </p>
             </div>
+          </div>
 
-            <form className="mt-6" onSubmit={submitSearch}>
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div
-                  aria-label="Search mode"
-                  className="inline-flex w-fit rounded-xl border border-white/[0.07] bg-[#080d1b] p-1"
-                  role="group"
+          <form className="mt-6" onSubmit={submitSearch}>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div
+                aria-label="Search mode"
+                className="inline-flex w-fit rounded-xl border border-white/[0.07] bg-[#080d1b] p-1"
+                role="group"
+              >
+                <button
+                  aria-pressed={searchMode === "quick"}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-indigo-300 ${
+                    searchMode === "quick"
+                      ? "bg-white/[0.08] text-white"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                  onClick={() => setSearchMode("quick")}
+                  type="button"
                 >
-                  <button
-                    aria-pressed={searchMode === "quick"}
-                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-indigo-300 ${
-                      searchMode === "quick"
-                        ? "bg-white/[0.08] text-white"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                    onClick={() => setSearchMode("quick")}
-                    type="button"
-                  >
-                    <SearchIcon />
-                    Quick Search
-                  </button>
-                  <button
-                    aria-pressed={searchMode === "detailed"}
-                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-indigo-300 ${
-                      searchMode === "detailed"
-                        ? "bg-white/[0.08] text-white"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                    onClick={() => setSearchMode("detailed")}
-                    type="button"
-                  >
-                    <SparkleIcon />
-                    Detailed Search
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#080d1b] px-3 text-xs text-slate-400">
-                    Model
-                    <select
-                      className="max-w-[150px] bg-transparent text-xs text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-                      defaultValue="auto"
-                      aria-label="Inference model"
-                    >
-                      <option value="auto">Auto (default)</option>
-                      <option value="balanced">Balanced</option>
-                      <option value="precise">High precision</option>
-                    </select>
-                  </label>
-                  <button
-                    className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] px-3 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
-                    onClick={() =>
-                      setSearchMessage("Search history is not connected yet.")
-                    }
-                    type="button"
-                  >
-                    <HistoryIcon />
-                    History
-                    <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-slate-400">
-                      2
-                    </span>
-                  </button>
-                  <button
-                    className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] px-3 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
-                    onClick={() =>
-                      setSearchText(
-                        "Recommend a reliable, easy-to-maintain solution for a mid-sized laboratory.",
-                      )
-                    }
-                    type="button"
-                  >
-                    <BookIcon />
-                    Templates
-                  </button>
-                </div>
+                  <SearchIcon />
+                  Quick Search
+                </button>
+                <button
+                  aria-pressed={searchMode === "detailed"}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-indigo-300 ${
+                    searchMode === "detailed"
+                      ? "bg-white/[0.08] text-white"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                  onClick={() => setSearchMode("detailed")}
+                  type="button"
+                >
+                  <SparkleIcon />
+                  Detailed Search
+                </button>
               </div>
 
-              {searchMode === "quick" && (
-                <>
-              <label className="sr-only" htmlFor="customer-needs">
-                Describe your customer needs
-              </label>
-              <textarea
-                className="mt-5 min-h-20 w-full resize-y rounded-xl border border-white/[0.09] bg-[#080d1b] px-3.5 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
-                id="customer-needs"
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Describe what your customer needs..."
-                value={searchText}
-              />
-              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-300">
-                <label className="flex items-center gap-2">
-                  Maximum products
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#080d1b] px-3 text-xs text-slate-400">
+                  Model
                   <select
-                    className="rounded-lg border border-white/10 bg-[#080d1b] px-2 py-1 text-xs text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-                    onChange={(event) => setQuickMaxProducts(Number(event.target.value))}
-                    value={quickMaxProducts}
+                    className="max-w-[150px] bg-transparent text-xs text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                    defaultValue="auto"
+                    aria-label="Inference model"
                   >
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
+                    <option value="auto">Auto (default)</option>
+                    <option value="balanced">Balanced</option>
+                    <option value="precise">High precision</option>
                   </select>
                 </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    checked={quickIncludeOos}
-                    className="size-4 accent-indigo-500"
-                    onChange={(event) => setQuickIncludeOos(event.target.checked)}
-                    type="checkbox"
-                  />
-                  Include out-of-stock products
-                </label>
+                <button
+                  className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] px-3 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
+                  onClick={() =>
+                    setSearchMessage("Search history is not connected yet.")
+                  }
+                  type="button"
+                >
+                  <HistoryIcon />
+                  History
+                  <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-slate-400">
+                    2
+                  </span>
+                </button>
+                <button
+                  className="flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] px-3 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
+                  onClick={() =>
+                    setSearchText(
+                      "Recommend a reliable, easy-to-maintain solution for a mid-sized laboratory.",
+                    )
+                  }
+                  type="button"
+                >
+                  <BookIcon />
+                  Templates
+                </button>
               </div>
-              <button
-                className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 text-sm font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-                disabled={suggestion.status === "loading"}
-                type="submit"
-              >
-                <SearchIcon />
-                {suggestion.status === "loading" ? "Searching…" : "Find Products"}
-              </button>
-              {searchMessage && (
-                <p aria-live="polite" className="mt-3 text-center text-xs text-slate-400" role="status">
-                  {searchMessage}
-                </p>
-              )}
-                </>
-              )}
-            </form>
-
-            {searchMode === "detailed" && (
-              <DetailedSearch
-                brands={[...new Set(products.map((p) => p.brand).filter(Boolean))].sort()}
-                categories={[...new Set(products.map((p) => p.category).filter(Boolean))].sort()}
-                currencies={[...new Set(products.map((p) => p.currency).filter(Boolean))].sort()}
-                loading={suggestion.status === "loading"}
-                onReset={() => setSuggestion({ status: "idle" })}
-                onSearch={(requirements, max, oos) =>
-                  void runSuggestion(requirements, max, oos)
-                }
-              />
-            )}
-
-            <SuggestionResults
-              onRetry={retrySearch}
-              onUseDetailSearch={() => setSearchMode("detailed")}
-              state={suggestion}
-            />
+            </div>
 
             {searchMode === "quick" && (
-              <VoiceSearch language={voiceLanguage} onSubmitQuery={submitVoiceQuery} />
-            )}
-        </section>
-
-        <section
-            hidden={activeTab !== "products"}
-            aria-labelledby="products-title"
-            className="rounded-2xl border border-white/[0.08] bg-[#0d1425] p-5 shadow-xl shadow-black/10 sm:p-7"
-            id="products-panel"
-            role="tabpanel"
-            tabIndex={0}
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-400/10 text-indigo-200">
-                  <BoxIcon />
-                </span>
-                <div>
-                  <h2 className="text-base font-semibold text-slate-100" id="products-title">
-                    Product Portfolio Management
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-slate-400">
-                    Add, edit, and curate your catalog to improve recommendations.
-                  </p>
-                </div>
-              </div>
-              <button
-                className="flex h-10 items-center justify-center gap-2 self-start rounded-xl bg-indigo-500 px-4 text-xs font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-                onClick={() => openProductDialog()}
-                type="button"
-              >
-                <PlusIcon />
-                Add Product
-              </button>
-            </div>
-
-            <div className="mt-7 flex flex-col gap-3 border-b border-white/[0.07] pb-5 md:flex-row md:items-center">
-              <label className="relative block min-w-0 flex-1">
-                <span className="sr-only">Search product catalog</span>
-                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-                <input
-                  className={`${inputClass} pl-10`}
-                  onChange={(event) => setProductQuery(event.target.value)}
-                  placeholder="Search products by name, brand, or description..."
-                  type="search"
-                  value={productQuery}
+              <>
+                <label className="sr-only" htmlFor="customer-needs">
+                  Describe your customer needs
+                </label>
+                <textarea
+                  className="mt-5 min-h-20 w-full resize-y rounded-xl border border-white/[0.09] bg-[#080d1b] px-3.5 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10"
+                  id="customer-needs"
+                  onChange={(event) => setSearchText(event.target.value)}
+                  placeholder="Describe what your customer needs..."
+                  value={searchText}
                 />
-              </label>
-              <label className="flex h-11 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#080d1b] px-3 text-xs text-slate-400 md:w-48">
-                <FilterIcon />
-                <span className="sr-only">Filter by category</span>
-                <select
-                  className="min-w-0 flex-1 bg-transparent text-xs text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-                  onChange={(event) => setCategoryFilter(event.target.value)}
-                  value={activeCategoryFilter}
+                <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-300">
+                  <label className="flex items-center gap-2">
+                    Maximum products
+                    <select
+                      className="rounded-lg border border-white/10 bg-[#080d1b] px-2 py-1 text-xs text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                      onChange={(event) =>
+                        setQuickMaxProducts(Number(event.target.value))
+                      }
+                      value={quickMaxProducts}
+                    >
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      checked={quickIncludeOos}
+                      className="size-4 accent-indigo-500"
+                      onChange={(event) =>
+                        setQuickIncludeOos(event.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    Include out-of-stock products
+                  </label>
+                </div>
+                <button
+                  className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 text-sm font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                  disabled={suggestion.status === "loading"}
+                  type="submit"
                 >
-                  <option value="all">All Categories</option>
-                  {categoryOptions.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="mt-5 flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-slate-300">
-                Product Catalog{" "}
-                <span className="text-slate-500">
-                  {productsStatus === "ready" &&
-                    `(${visibleProducts.length} of ${products.length} products)`}
-                </span>
-              </p>
-              <span className="hidden text-[11px] text-slate-500 sm:block">
-                Select a product to view its details
-              </span>
-            </div>
-
-            <div className="mt-3 space-y-7">
-              {[...groupedProducts].map(([category, items]) => (
-                <section aria-labelledby={`category-${category}`} key={category}>
-                  <h3
-                    className="flex items-center gap-2 border-b border-white/[0.06] pb-2 text-sm font-semibold text-slate-100"
-                    id={`category-${category}`}
+                  <SearchIcon />
+                  {suggestion.status === "loading"
+                    ? "Searching…"
+                    : "Find Products"}
+                </button>
+                {searchMessage && (
+                  <p
+                    aria-live="polite"
+                    className="mt-3 text-center text-xs text-slate-400"
+                    role="status"
                   >
-                    {category}
-                    <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[11px] font-medium text-slate-400">
-                      {items.length}
-                    </span>
-                  </h3>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {items.map((product) => (
-                      <article
-                        className="group relative rounded-xl border border-white/[0.07] bg-white/[0.02] transition hover:border-indigo-300/30 hover:bg-white/[0.04]"
-                        key={product.id}
-                      >
-                        <button
-                          aria-label={`View details for ${product.name}`}
-                          className="flex w-full min-w-0 items-start gap-3 rounded-xl p-3 pr-[5.5rem] text-left focus-visible:outline-2 focus-visible:outline-cyan-300"
-                          onClick={() => setDetailProductId(product.id)}
-                          type="button"
-                        >
-                          <ProductThumb product={product} />
-                          <span className="block min-w-0">
-                            <span className="block truncate text-sm font-medium text-slate-100">
-                              {product.name}
-                            </span>
-                            <span className="mt-1 block truncate text-xs text-slate-400">
-                              {[product.brand, product.type, product.subType]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </span>
-                            <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500">
-                              {product.description}
-                            </span>
-                          </span>
-                        </button>
-                        <div className="absolute right-2 top-2 flex items-center gap-1.5">
-                          <button
-                            aria-label={`Edit ${product.name}`}
-                            className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-2 focus-visible:outline-cyan-300"
-                            onClick={() => openProductDialog(product)}
-                            type="button"
-                          >
-                            <EditIcon />
-                          </button>
-                          <button
-                            aria-label={`Delete ${product.name}`}
-                            className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-rose-300 disabled:opacity-50"
-                            disabled={deletingProductId !== null}
-                            onClick={() => setConfirmAction({ kind: "delete", product })}
-                            type="button"
-                          >
-                            <TrashIcon />
-                          </button>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              ))}
-              {productsStatus === "loading" && (
-                <p className="py-10 text-center text-sm text-slate-400" role="status">
-                  Loading products…
-                </p>
-              )}
-              {productsStatus === "error" && (
-                <div className="py-10 text-center" role="alert">
-                  <p className="text-sm font-medium text-rose-300">
-                    Could not load products
+                    {searchMessage}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">{productsError}</p>
-                  <button
-                    className="mt-3 h-9 rounded-xl border border-white/[0.1] px-4 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
-                    onClick={reloadProducts}
-                    type="button"
-                  >
-                    Retry
-                  </button>
-                </div>
-              )}
-              {productsStatus === "ready" && visibleProducts.length === 0 && (
-                <div className="py-10 text-center" role="status">
-                  <p className="text-sm font-medium text-slate-300">No products found</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {products.length === 0
-                      ? "There are no products yet. Add a new product to get started."
-                      : "Try a different search or category, or add a new product."}
-                  </p>
-                </div>
-              )}
-            </div>
-            <p className="mt-4 text-center text-[11px] text-slate-500">
-              Changes are a local UI preview and are not saved to a server.
-            </p>
+                )}
+              </>
+            )}
+          </form>
+
+          {searchMode === "detailed" && (
+            <DetailedSearch
+              brands={[
+                ...new Set(products.map((p) => p.brand).filter(Boolean)),
+              ].sort()}
+              categories={[
+                ...new Set(products.map((p) => p.category).filter(Boolean)),
+              ].sort()}
+              currencies={[
+                ...new Set(products.map((p) => p.currency).filter(Boolean)),
+              ].sort()}
+              loading={suggestion.status === "loading"}
+              onReset={() => setSuggestion({ status: "idle" })}
+              onSearch={(requirements, max, oos) =>
+                void runSuggestion(requirements, max, oos)
+              }
+            />
+          )}
+
+          <SuggestionResults
+            onRetry={retrySearch}
+            onUseDetailSearch={() => setSearchMode("detailed")}
+            state={suggestion}
+          />
+
+          {searchMode === "quick" && (
+            <VoiceSearch
+              language={voiceLanguage}
+              onSubmitQuery={submitVoiceQuery}
+            />
+          )}
         </section>
 
         <section
-            hidden={activeTab !== "analytics"}
-            aria-labelledby="analytics-title"
-            className="rounded-2xl border border-white/[0.08] bg-[#0d1425] p-5 shadow-xl shadow-black/10 sm:p-7"
-            id="analytics-panel"
-            role="tabpanel"
-            tabIndex={0}
-          >
+          hidden={activeTab !== "products"}
+          aria-labelledby="products-title"
+          className="rounded-2xl border border-white/[0.08] bg-[#0d1425] p-5 shadow-xl shadow-black/10 sm:p-7"
+          id="products-panel"
+          role="tabpanel"
+          tabIndex={0}
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-violet-200">
-                <ChartIcon />
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-400/10 text-indigo-200">
+                <BoxIcon />
               </span>
               <div>
-                <h2 className="text-base font-semibold text-slate-100" id="analytics-title">
-                  Analytics Dashboard
+                <h2
+                  className="text-base font-semibold text-slate-100"
+                  id="products-title"
+                >
+                  Product Portfolio Management
                 </h2>
                 <p className="mt-1 text-xs leading-5 text-slate-400">
-                  An overview of product discovery and sales support activity.
+                  Add, edit, and curate your catalog to improve recommendations.
                 </p>
               </div>
             </div>
+            <button
+              className="flex h-10 items-center justify-center gap-2 self-start rounded-xl bg-indigo-500 px-4 text-xs font-semibold text-white transition hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+              onClick={() => openProductDialog()}
+              type="button"
+            >
+              <PlusIcon />
+              Add Product
+            </button>
+          </div>
 
-            {productsStatus === "loading" ? (
-              <p className="mt-6 rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5 text-sm text-slate-400" role="status">
-                Loading product analytics…
+          <div className="mt-7 flex flex-col gap-3 border-b border-white/[0.07] pb-5 md:flex-row md:items-center">
+            <label className="relative block min-w-0 flex-1">
+              <span className="sr-only">Search product catalog</span>
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+              <input
+                className={`${inputClass} pl-10`}
+                onChange={(event) => setProductQuery(event.target.value)}
+                placeholder="Search products by name, brand, or description..."
+                type="search"
+                value={productQuery}
+              />
+            </label>
+            <label className="flex h-11 items-center gap-2 rounded-xl border border-white/[0.08] bg-[#080d1b] px-3 text-xs text-slate-400 md:w-48">
+              <FilterIcon />
+              <span className="sr-only">Filter by category</span>
+              <select
+                className="min-w-0 flex-1 bg-transparent text-xs text-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                onChange={(event) => setCategoryFilter(event.target.value)}
+                value={activeCategoryFilter}
+              >
+                <option value="all">All Categories</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <p className="text-xs font-medium text-slate-300">
+              Product Catalog{" "}
+              <span className="text-slate-500">
+                {productsStatus === "ready" &&
+                  `(${visibleProducts.length} of ${products.length} products)`}
+              </span>
+            </p>
+            <span className="hidden text-[11px] text-slate-500 sm:block">
+              Select a product to view its details
+            </span>
+          </div>
+
+          <div className="mt-3 space-y-7">
+            {[...groupedProducts].map(([category, items]) => (
+              <section aria-labelledby={`category-${category}`} key={category}>
+                <h3
+                  className="flex items-center gap-2 border-b border-white/[0.06] pb-2 text-sm font-semibold text-slate-100"
+                  id={`category-${category}`}
+                >
+                  {category}
+                  <span className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[11px] font-medium text-slate-400">
+                    {items.length}
+                  </span>
+                </h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((product) => (
+                    <article
+                      className="group relative rounded-xl border border-white/[0.07] bg-white/[0.02] transition hover:border-indigo-300/30 hover:bg-white/[0.04]"
+                      key={product.id}
+                    >
+                      <button
+                        aria-label={`View details for ${product.name}`}
+                        className="flex w-full min-w-0 items-start gap-3 rounded-xl p-3 pr-[5.5rem] text-left focus-visible:outline-2 focus-visible:outline-cyan-300"
+                        onClick={() => setDetailProductId(product.id)}
+                        type="button"
+                      >
+                        <ProductThumb product={product} />
+                        <span className="block min-w-0">
+                          <span className="block truncate text-sm font-medium text-slate-100">
+                            {product.name}
+                          </span>
+                          <span className="mt-1 block truncate text-xs text-slate-400">
+                            {[product.brand, product.type, product.subType]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                          <span className="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500">
+                            {product.description}
+                          </span>
+                        </span>
+                      </button>
+                      <div className="absolute right-2 top-2 flex items-center gap-1.5">
+                        <button
+                          aria-label={`Edit ${product.name}`}
+                          className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:bg-white/[0.05] hover:text-white focus-visible:outline-2 focus-visible:outline-cyan-300"
+                          onClick={() => openProductDialog(product)}
+                          type="button"
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          aria-label={`Delete ${product.name}`}
+                          className="flex size-8 items-center justify-center rounded-lg border border-white/[0.08] text-slate-400 transition hover:border-rose-300/20 hover:bg-rose-400/10 hover:text-rose-200 focus-visible:outline-2 focus-visible:outline-rose-300 disabled:opacity-50"
+                          disabled={deletingProductId !== null}
+                          onClick={() =>
+                            setConfirmAction({ kind: "delete", product })
+                          }
+                          type="button"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
+            {productsStatus === "loading" && (
+              <p
+                className="py-10 text-center text-sm text-slate-400"
+                role="status"
+              >
+                Loading products…
               </p>
-            ) : productsStatus === "error" ? (
-              <div className="mt-6 rounded-xl border border-rose-400/20 bg-rose-400/[0.05] p-5" role="alert">
-                <p className="text-sm text-rose-200">{productsError}</p>
-                <button className="mt-3 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/[0.05]" onClick={reloadProducts} type="button">
+            )}
+            {productsStatus === "error" && (
+              <div className="py-10 text-center" role="alert">
+                <p className="text-sm font-medium text-rose-300">
+                  Could not load products
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{productsError}</p>
+                <button
+                  className="mt-3 h-9 rounded-xl border border-white/[0.1] px-4 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
+                  onClick={reloadProducts}
+                  type="button"
+                >
                   Retry
                 </button>
               </div>
-            ) : (
-              <>
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  <MetricCard label="Total products" value={products.length.toLocaleString()} />
-                  <MetricCard label="Active products" value={activeProducts.length.toLocaleString()} />
-                  <MetricCard label="Units in stock" value={stockUnits.toLocaleString()} />
-                </div>
-                <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
-                    <h3 className="text-sm font-medium text-slate-200">Catalog value</h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Estimated value at selling price, grouped by product currency
-                    </p>
-                    {inventoryValueByCurrency.size ? (
-                      <div className="mt-5 space-y-2">
-                        {[...inventoryValueByCurrency].sort(([a], [b]) => a.localeCompare(b)).map(([currency, value]) => (
-                          <p className="text-2xl font-semibold tracking-tight text-white" key={currency}>
-                            {new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(value)}
+            )}
+            {productsStatus === "ready" && visibleProducts.length === 0 && (
+              <div className="py-10 text-center" role="status">
+                <p className="text-sm font-medium text-slate-300">
+                  No products found
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {products.length === 0
+                    ? "There are no products yet. Add a new product to get started."
+                    : "Try a different search or category, or add a new product."}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section
+          hidden={activeTab !== "analytics"}
+          aria-labelledby="analytics-title"
+          className="rounded-2xl border border-white/[0.08] bg-[#0d1425] p-5 shadow-xl shadow-black/10 sm:p-7"
+          id="analytics-panel"
+          role="tabpanel"
+          tabIndex={0}
+        >
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-400/10 text-violet-200">
+              <ChartIcon />
+            </span>
+            <div>
+              <h2
+                className="text-base font-semibold text-slate-100"
+                id="analytics-title"
+              >
+                Analytics Dashboard
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                An overview of product discovery and sales support activity.
+              </p>
+            </div>
+          </div>
+
+          {productsStatus === "loading" ? (
+            <p
+              className="mt-6 rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5 text-sm text-slate-400"
+              role="status"
+            >
+              Loading product analytics…
+            </p>
+          ) : productsStatus === "error" ? (
+            <div
+              className="mt-6 rounded-xl border border-rose-400/20 bg-rose-400/[0.05] p-5"
+              role="alert"
+            >
+              <p className="text-sm text-rose-200">{productsError}</p>
+              <button
+                className="mt-3 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/[0.05]"
+                onClick={reloadProducts}
+                type="button"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <MetricCard
+                  label="Total products"
+                  value={products.length.toLocaleString()}
+                />
+                <MetricCard
+                  label="Active products"
+                  value={activeProducts.length.toLocaleString()}
+                />
+                <MetricCard
+                  label="Units in stock"
+                  value={stockUnits.toLocaleString()}
+                />
+              </div>
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
+                  <h3 className="text-sm font-medium text-slate-200">
+                    Catalog value
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Estimated value at selling price, grouped by product
+                    currency
+                  </p>
+                  {inventoryValueByCurrency.size ? (
+                    <div className="mt-5 space-y-2">
+                      {[...inventoryValueByCurrency]
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([currency, value]) => (
+                          <p
+                            className="text-2xl font-semibold tracking-tight text-white"
+                            key={currency}
+                          >
+                            {new Intl.NumberFormat(undefined, {
+                              style: "currency",
+                              currency,
+                              maximumFractionDigits: 0,
+                            }).format(value)}
                           </p>
                         ))}
-                      </div>
-                    ) : (
-                      <p className="mt-6 text-sm text-slate-500">No priced products with stock available.</p>
-                    )}
-                    <p className="mt-2 text-xs text-slate-500">Calculated from current product prices and stock quantities</p>
-                  </div>
-                  <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
-                    <h3 className="text-sm font-medium text-slate-200">Top product categories</h3>
-                    <p className="mt-1 text-xs text-slate-500">Share of products in each category</p>
-                    {productCategories.length ? (
-                      <div className="mt-6 space-y-5">
-                        {productCategories.map(([label, count]) => (
-                          <CategoryBar key={label} label={label} value={Math.round((count / products.length) * 100)} count={count} />
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="mt-6 text-sm text-slate-500">No products to analyze yet.</p>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <p className="mt-6 text-sm text-slate-500">
+                      No priced products with stock available.
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs text-slate-500">
+                    Calculated from current product prices and stock quantities
+                  </p>
                 </div>
-                <p className="mt-5 text-center text-[11px] text-slate-500">
-                  Based on your current product catalog. Analytics refresh when product data is reloaded.
-                </p>
-              </>
-            )}
+                <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
+                  <h3 className="text-sm font-medium text-slate-200">
+                    Top product categories
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Share of products in each category
+                  </p>
+                  {productCategories.length ? (
+                    <div className="mt-6 space-y-5">
+                      {productCategories.map(([label, count]) => (
+                        <CategoryBar
+                          key={label}
+                          label={label}
+                          value={Math.round((count / products.length) * 100)}
+                          count={count}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-6 text-sm text-slate-500">
+                      No products to analyze yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <p className="mt-5 text-center text-[11px] text-slate-500">
+                Based on your current product catalog. Analytics refresh when
+                product data is reloaded.
+              </p>
+            </>
+          )}
         </section>
       </div>
 
@@ -882,8 +987,13 @@ export default function DashboardWorkspace() {
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-white" id="product-dialog-title">
-                  {editingProductId === null ? "Add New Product" : "Edit Product"}
+                <h2
+                  className="text-lg font-semibold text-white"
+                  id="product-dialog-title"
+                >
+                  {editingProductId === null
+                    ? "Add New Product"
+                    : "Edit Product"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-400">
                   Add a product to your catalog
@@ -995,7 +1105,9 @@ export default function DashboardWorkspace() {
           }
           onClose={() => setConfirmAction(null)}
           title={
-            confirmAction.kind === "delete" ? "Confirm delete" : "Confirm update"
+            confirmAction.kind === "delete"
+              ? "Confirm delete"
+              : "Confirm update"
           }
           tone={confirmAction.kind === "delete" ? "error" : "info"}
         />
@@ -1067,7 +1179,10 @@ function PopupDialog({
         <h2 className={`text-base font-semibold ${accent}`} id="popup-title">
           {title}
         </h2>
-        <p className="mt-2 break-words text-sm text-slate-300" id="popup-message">
+        <p
+          className="mt-2 break-words text-sm text-slate-300"
+          id="popup-message"
+        >
           {message}
         </p>
         <div className="mt-5 flex justify-center gap-2">{actions}</div>
@@ -1081,18 +1196,30 @@ function MetricCard({ label, value }: { label: string; value: string }) {
     <article className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 px-4 py-4">
       <p className="text-xs font-medium text-slate-400">{label}</p>
       <div className="mt-3">
-        <p className="text-2xl font-semibold tracking-tight text-white">{value}</p>
+        <p className="text-2xl font-semibold tracking-tight text-white">
+          {value}
+        </p>
       </div>
     </article>
   );
 }
 
-function CategoryBar({ label, value, count }: { label: string; value: number; count: number }) {
+function CategoryBar({
+  label,
+  value,
+  count,
+}: {
+  label: string;
+  value: number;
+  count: number;
+}) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-xs">
         <span className="text-slate-300">{label}</span>
-        <span className="text-slate-500">{count} products · {value}%</span>
+        <span className="text-slate-500">
+          {count} products · {value}%
+        </span>
       </div>
       <div
         aria-label={`${label}: ${value}%`}
@@ -1116,8 +1243,19 @@ function SearchIcon({ className = "size-4" }: { className?: string }) {
       fill="none"
       viewBox="0 0 24 24"
     >
-      <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" strokeWidth="1.7" />
-      <path d="m15.5 15.5 4.2 4.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+      <circle
+        cx="10.8"
+        cy="10.8"
+        r="6.3"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="m15.5 15.5 4.2 4.2"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.7"
+      />
     </svg>
   );
 }
@@ -1148,7 +1286,6 @@ function ProductThumb({
       }`}
     >
       {showImage ? (
-        // Arbitrary user-supplied remote URL, so next/image is not suitable.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           alt={`${product.name} image`}
@@ -1189,7 +1326,8 @@ function placeholderVisual(product: Product): {
   gradient: string;
   icon: ReactNode;
 } {
-  const text = `${product.category} ${product.type} ${product.subType}`.toLowerCase();
+  const text =
+    `${product.category} ${product.type} ${product.subType}`.toLowerCase();
   if (/lab|chromat|analy|hplc|science/.test(text)) {
     return {
       label: "Laboratory",
@@ -1271,7 +1409,10 @@ function ProductDetailModal({
         ? `In Stock (${stock})`
         : "Out of Stock";
   const specs = product.specifications.filter((spec) => spec.key.trim());
-  const features = product.features.split("\n").map((f) => f.trim()).filter(Boolean);
+  const features = product.features
+    .split("\n")
+    .map((f) => f.trim())
+    .filter(Boolean);
 
   const rows: [string, string][] = [
     ["Brand", product.brand],
@@ -1285,9 +1426,7 @@ function ProductDetailModal({
     ],
     [
       "Price",
-      product.sellingPrice
-        ? `${product.sellingPrice} ${product.currency}`
-        : "",
+      product.sellingPrice ? `${product.sellingPrice} ${product.currency}` : "",
     ],
     ["Availability", availability],
     [
@@ -1316,7 +1455,10 @@ function ProductDetailModal({
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
-          <h2 className="text-lg font-semibold text-white" id="product-detail-title">
+          <h2
+            className="text-lg font-semibold text-white"
+            id="product-detail-title"
+          >
             {product.name}
           </h2>
           <button
@@ -1333,7 +1475,9 @@ function ProductDetailModal({
         <div className="mt-4">
           <ProductThumb large product={product} />
         </div>
-        <p className="mt-4 text-sm leading-6 text-slate-300">{product.description}</p>
+        <p className="mt-4 text-sm leading-6 text-slate-300">
+          {product.description}
+        </p>
 
         <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
           {rows
@@ -1348,12 +1492,16 @@ function ProductDetailModal({
 
         {specs.length > 0 && (
           <div className="mt-4">
-            <h3 className="text-xs font-semibold text-slate-300">Specifications</h3>
+            <h3 className="text-xs font-semibold text-slate-300">
+              Specifications
+            </h3>
             <dl className="mt-2 grid gap-x-6 gap-y-2 sm:grid-cols-2">
               {specs.map((spec, index) => (
                 <div key={`${spec.key}-${index}`}>
                   <dt className="text-[11px] text-slate-500">{spec.key}</dt>
-                  <dd className="text-sm text-slate-200">{spec.value || "—"}</dd>
+                  <dd className="text-sm text-slate-200">
+                    {spec.value || "—"}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -1375,7 +1523,9 @@ function ProductDetailModal({
           ([label, values]) =>
             values.length > 0 && (
               <div className="mt-4" key={label}>
-                <h3 className="text-xs font-semibold text-slate-300">{label}</h3>
+                <h3 className="text-xs font-semibold text-slate-300">
+                  {label}
+                </h3>
                 <ul className="mt-2 flex flex-wrap gap-1.5">
                   {values.map((value) => (
                     <li
@@ -1397,8 +1547,12 @@ function ProductDetailModal({
           ([label, value]) =>
             value.trim() && (
               <div className="mt-4" key={label}>
-                <h3 className="text-xs font-semibold text-slate-300">{label}</h3>
-                <p className="mt-1 whitespace-pre-line text-sm text-slate-200">{value}</p>
+                <h3 className="text-xs font-semibold text-slate-300">
+                  {label}
+                </h3>
+                <p className="mt-1 whitespace-pre-line text-sm text-slate-200">
+                  {value}
+                </p>
               </div>
             ),
         )}
@@ -1446,10 +1600,39 @@ function BoxIcon() {
 function ChartIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="M4 20V4m0 16h17" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-      <rect height="7" rx="1" stroke="currentColor" strokeWidth="1.6" width="3.5" x="7" y="10" />
-      <rect height="11" rx="1" stroke="currentColor" strokeWidth="1.6" width="3.5" x="13" y="6" />
-      <rect height="4" rx="1" stroke="currentColor" strokeWidth="1.6" width="3.5" x="19" y="13" />
+      <path
+        d="M4 20V4m0 16h17"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+      />
+      <rect
+        height="7"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        width="3.5"
+        x="7"
+        y="10"
+      />
+      <rect
+        height="11"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        width="3.5"
+        x="13"
+        y="6"
+      />
+      <rect
+        height="4"
+        rx="1"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        width="3.5"
+        x="19"
+        y="13"
+      />
     </svg>
   );
 }
@@ -1457,8 +1640,16 @@ function ChartIcon() {
 function SparkleIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="m12 3 1.7 6.3L20 11l-6.3 1.7L12 19l-1.7-6.3L4 11l6.3-1.7L12 3Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.5" />
-      <path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z" fill="currentColor" />
+      <path
+        d="m12 3 1.7 6.3L20 11l-6.3 1.7L12 19l-1.7-6.3L4 11l6.3-1.7L12 3Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+      <path
+        d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"
+        fill="currentColor"
+      />
     </svg>
   );
 }
@@ -1466,8 +1657,20 @@ function SparkleIcon() {
 function HistoryIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="M4.5 8V3.5m0 0H9m-4.5 0 3 3A8 8 0 1 1 4 12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M12 7.5V12l3 1.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path
+        d="M4.5 8V3.5m0 0H9m-4.5 0 3 3A8 8 0 1 1 4 12"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M12 7.5V12l3 1.8"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
     </svg>
   );
 }
@@ -1475,16 +1678,35 @@ function HistoryIcon() {
 function BookIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M4 18a2.5 2.5 0 0 1 2.5-2.5H20" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M4 18a2.5 2.5 0 0 1 2.5-2.5H20"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
     </svg>
   );
 }
 
 function FilterIcon() {
   return (
-    <svg aria-hidden="true" className="size-4 shrink-0" fill="none" viewBox="0 0 24 24">
-      <path d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.6" />
+    <svg
+      aria-hidden="true"
+      className="size-4 shrink-0"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M4 5h16l-6.5 7.5v5l-3 1.5v-6.5L4 5Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
     </svg>
   );
 }
@@ -1492,7 +1714,12 @@ function FilterIcon() {
 function PlusIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="M12 5v14m-7-7h14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path
+        d="M12 5v14m-7-7h14"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
     </svg>
   );
 }
@@ -1500,7 +1727,13 @@ function PlusIcon() {
 function EditIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="m14 5 5 5M4 20l4.3-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path
+        d="m14 5 5 5M4 20l4.3-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
     </svg>
   );
 }
@@ -1508,7 +1741,13 @@ function EditIcon() {
 function TrashIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="M4 7h16m-10 4v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path
+        d="M4 7h16m-10 4v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
     </svg>
   );
 }
@@ -1516,7 +1755,12 @@ function TrashIcon() {
 function CloseIcon() {
   return (
     <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
-      <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+      <path
+        d="m6 6 12 12M18 6 6 18"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.7"
+      />
     </svg>
   );
 }

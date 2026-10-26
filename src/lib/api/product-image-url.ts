@@ -1,4 +1,5 @@
-const PRODUCT_IMAGE_PATH = /^\/static\/products\/([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(?:jpe?g|png|webp|gif))$/i;
+const PRODUCT_IMAGE_PATH =
+  /^\/static\/products\/([A-Za-z0-9][A-Za-z0-9._-]{0,127}\.(?:jpe?g|png|webp|gif))$/i;
 
 const configuredBackendHost = (() => {
   try {
@@ -18,7 +19,6 @@ const backendHosts = new Set([
   configuredBackendHost,
 ]);
 
-/** Route backend-owned product images through this app; leave external image URLs untouched. */
 export function productImageUrl(value: unknown): string {
   if (typeof value !== "string") return "";
   const source = value.trim();
@@ -38,7 +38,5 @@ export function productImageUrl(value: unknown): string {
   }
 
   const match = pathname.match(PRODUCT_IMAGE_PATH);
-  return match
-    ? `/api/product-images/${encodeURIComponent(match[1])}`
-    : source;
+  return match ? `/api/product-images/${encodeURIComponent(match[1])}` : source;
 }

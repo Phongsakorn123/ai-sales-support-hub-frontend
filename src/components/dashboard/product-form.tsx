@@ -33,7 +33,9 @@ export interface ProductFormValues {
   limitations: string;
 }
 
-export type ProductFormErrors = Partial<Record<keyof ProductFormValues, string>>;
+export type ProductFormErrors = Partial<
+  Record<keyof ProductFormValues, string>
+>;
 
 export const emptyProduct: ProductFormValues = {
   name: "",
@@ -135,7 +137,8 @@ export function validateProduct(values: ProductFormValues): ProductFormErrors {
   const stock = values.stockQuantity.trim();
   if (!stock) errors.stockQuantity = "Stock quantity is required.";
   else if (!/^\d+$/.test(stock))
-    errors.stockQuantity = "Stock quantity must be a whole number of 0 or more.";
+    errors.stockQuantity =
+      "Stock quantity must be a whole number of 0 or more.";
 
   const warranty = values.warrantyMonths.trim();
   if (warranty && !/^\d+$/.test(warranty))
@@ -177,7 +180,9 @@ function Field({
         </span>
       ) : (
         helper && (
-          <span className="mt-1 block text-[11px] text-slate-500">{helper}</span>
+          <span className="mt-1 block text-[11px] text-slate-500">
+            {helper}
+          </span>
         )
       )}
     </label>
@@ -276,7 +281,9 @@ function TagInput({
 }
 
 function optionsWith(options: string[], current: string): string[] {
-  return current && !options.includes(current) ? [current, ...options] : options;
+  return current && !options.includes(current)
+    ? [current, ...options]
+    : options;
 }
 
 export default function ProductFormFields({
@@ -347,7 +354,9 @@ export default function ProductFormFields({
   return (
     <div className="space-y-4">
       <fieldset className={sectionClass}>
-        <legend className={`${sectionTitleClass} px-1`}>Basic Information</legend>
+        <legend className={`${sectionTitleClass} px-1`}>
+          Basic Information
+        </legend>
         <div className="mt-2 grid gap-4 sm:grid-cols-2">
           <Field error={err("name")} label="Product Name *">
             <input
@@ -386,7 +395,11 @@ export default function ProductFormFields({
           </Field>
         </div>
 
-        <Field className="mt-4" error={err("description")} label="Description * (minimum 10 characters)">
+        <Field
+          className="mt-4"
+          error={err("description")}
+          label="Description * (minimum 10 characters)"
+        >
           <textarea
             {...bind("description")}
             className={textareaClass}
@@ -419,9 +432,10 @@ export default function ProductFormFields({
         {canPreview && (
           <div className="mt-2 flex h-32 items-center justify-center overflow-hidden rounded-xl border border-white/[0.07] bg-[#080d1b]">
             {imageFailed === imageUrl ? (
-              <span className="text-xs text-slate-500">Image could not be loaded.</span>
+              <span className="text-xs text-slate-500">
+                Image could not be loaded.
+              </span>
             ) : (
-              // Arbitrary user-supplied remote URL, so next/image is not suitable.
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt="Product preview"
@@ -488,7 +502,9 @@ export default function ProductFormFields({
       </fieldset>
 
       <fieldset className={sectionClass}>
-        <legend className={`${sectionTitleClass} px-1`}>Pricing and Inventory</legend>
+        <legend className={`${sectionTitleClass} px-1`}>
+          Pricing and Inventory
+        </legend>
         <div className="mt-2 grid gap-4 sm:grid-cols-3">
           <Field error={err("sellingPrice")} label="Selling Price *">
             <input
@@ -514,7 +530,11 @@ export default function ProductFormFields({
               ))}
             </select>
           </Field>
-          <Field error={err("costPrice")} helper="Optional, internal only." label="Cost Price">
+          <Field
+            error={err("costPrice")}
+            helper="Optional, internal only."
+            label="Cost Price"
+          >
             <input
               {...bind("costPrice")}
               className={numberClass}
@@ -566,17 +586,29 @@ export default function ProductFormFields({
       </fieldset>
 
       <details className={`group ${sectionClass}`}>
-        <summary className={`${sectionTitleClass} flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden`}>
-          <span aria-hidden="true" className="text-slate-500 transition-transform group-open:rotate-90">›</span>
+        <summary
+          className={`${sectionTitleClass} flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden`}
+        >
+          <span
+            aria-hidden="true"
+            className="text-slate-500 transition-transform group-open:rotate-90"
+          >
+            ›
+          </span>
           Technical Specifications{" "}
-          <span className="text-[11px] font-normal text-slate-500">(optional)</span>
+          <span className="text-[11px] font-normal text-slate-500">
+            (optional)
+          </span>
         </summary>
         <div className="mt-4 space-y-4">
           <div>
             <span className={labelClass}>Specifications</span>
             <div className="space-y-2">
               {values.specifications.map((spec, index) => (
-                <div className="grid grid-cols-[1fr_1fr_auto] gap-2" key={index}>
+                <div
+                  className="grid grid-cols-[1fr_1fr_auto] gap-2"
+                  key={index}
+                >
                   <input
                     aria-label={`Specification ${index + 1} name`}
                     className={inputClass}
@@ -588,7 +620,9 @@ export default function ProductFormFields({
                   <input
                     aria-label={`Specification ${index + 1} value`}
                     className={inputClass}
-                    onChange={(e) => updateSpec(index, { value: e.target.value })}
+                    onChange={(e) =>
+                      updateSpec(index, { value: e.target.value })
+                    }
                     placeholder="e.g. Intel Core i7"
                     value={spec.value}
                   />
@@ -618,7 +652,10 @@ export default function ProductFormFields({
             <button
               className="mt-2 h-9 rounded-xl border border-white/10 px-3 text-xs font-medium text-slate-300 transition hover:bg-white/[0.05] focus-visible:outline-2 focus-visible:outline-cyan-300"
               onClick={() =>
-                set("specifications", [...values.specifications, { key: "", value: "" }])
+                set("specifications", [
+                  ...values.specifications,
+                  { key: "", value: "" },
+                ])
               }
               type="button"
             >
@@ -636,7 +673,10 @@ export default function ProductFormFields({
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field error={err("warrantyMonths")} label="Warranty Period (months)">
+            <Field
+              error={err("warrantyMonths")}
+              label="Warranty Period (months)"
+            >
               <input
                 {...bind("warrantyMonths")}
                 className={numberClass}
@@ -661,15 +701,24 @@ export default function ProductFormFields({
       </details>
 
       <details className={`group ${sectionClass}`}>
-        <summary className={`${sectionTitleClass} flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden`}>
-          <span aria-hidden="true" className="text-slate-500 transition-transform group-open:rotate-90">›</span>
+        <summary
+          className={`${sectionTitleClass} flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden`}
+        >
+          <span
+            aria-hidden="true"
+            className="text-slate-500 transition-transform group-open:rotate-90"
+          >
+            ›
+          </span>
           AI Recommendation Context{" "}
-          <span className="text-[11px] font-normal text-slate-500">(optional)</span>
+          <span className="text-[11px] font-normal text-slate-500">
+            (optional)
+          </span>
         </summary>
         <div className="mt-4 space-y-4">
           <p className="text-[11px] text-slate-500">
-            Helps describe who this product suits. These details are stored with the
-            product form only; AI recommendations are not connected yet.
+            Helps describe who this product suits. These details are stored with
+            the product form only; AI recommendations are not connected yet.
           </p>
           <TagInput
             label="Target Customer"
@@ -693,7 +742,10 @@ export default function ProductFormFields({
               value={values.keyBenefits}
             />
           </Field>
-          <Field helper="Optional: constraints or unsuitable use cases." label="Limitations">
+          <Field
+            helper="Optional: constraints or unsuitable use cases."
+            label="Limitations"
+          >
             <textarea
               className={textareaClass}
               onChange={(e) => set("limitations", e.target.value)}

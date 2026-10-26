@@ -58,13 +58,13 @@ async function LoginPageContent() {
             <LoginForm />
 
             <p className="mt-8 text-center text-sm text-slate-500">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/register"
                 className="font-semibold text-indigo-700 decoration-indigo-300 underline-offset-4 hover:text-indigo-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
               >
                 Create account
-            </Link>
+              </Link>
             </p>
           </div>
         </section>
@@ -75,12 +75,7 @@ async function LoginPageContent() {
 
 function BrandIcon() {
   return (
-    <svg
-      aria-hidden="true"
-      className="size-5"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
+    <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
       <path
         d="M12 2.75 14.1 9.9l7.15 2.1-7.15 2.1L12 21.25 9.9 14.1l-7.15-2.1L9.9 9.9 12 2.75Z"
         fill="currentColor"

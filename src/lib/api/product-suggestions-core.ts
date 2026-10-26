@@ -1,6 +1,3 @@
-// Pure request/response logic for POST /api/v1/ai/product-suggestions.
-// Kept free of imports so it can be unit-tested with `node --test`.
-
 export type MatchType = "exact_match" | "alternative" | "insufficient_data";
 export type RankingSource = "ai" | "catalog_fallback";
 export type RetrievalMode = "hybrid" | "keyword_fallback";
@@ -108,9 +105,6 @@ export function validateDetailCriteria(
   return errors;
 }
 
-// The backend extracts budget, brand, category and minimum RAM from text with
-// fixed rules, so the structured fields are phrased the way it parses them.
-// Only fields the user filled in are included.
 export function buildDetailQuery(criteria: DetailCriteria): string {
   const parts: string[] = [];
   const purpose = criteria.purpose.trim();
@@ -170,9 +164,11 @@ export class SuggestionFormatError extends Error {
 function parseDocument(raw: unknown): SupportingDocument | null {
   if (!isObject(raw) || typeof raw.title !== "string") return null;
   return {
-    documentId: typeof raw.document_id === "string" ? raw.document_id : raw.title,
+    documentId:
+      typeof raw.document_id === "string" ? raw.document_id : raw.title,
     title: raw.title,
-    documentType: typeof raw.document_type === "string" ? raw.document_type : "",
+    documentType:
+      typeof raw.document_type === "string" ? raw.document_type : "",
     isMock: raw.is_mock === true,
     approvalStatus:
       typeof raw.approval_status === "string" ? raw.approval_status : "",
@@ -180,7 +176,11 @@ function parseDocument(raw: unknown): SupportingDocument | null {
   };
 }
 
-const matchTypes: MatchType[] = ["exact_match", "alternative", "insufficient_data"];
+const matchTypes: MatchType[] = [
+  "exact_match",
+  "alternative",
+  "insufficient_data",
+];
 
 function parseRecommendation(raw: unknown): Recommendation {
   if (
@@ -198,12 +198,13 @@ function parseRecommendation(raw: unknown): Recommendation {
     sku: nullableText(raw.sku),
     category: nullableText(raw.category),
     sellingPrice:
-      typeof price === "string" || typeof price === "number" ? String(price) : "",
+      typeof price === "string" || typeof price === "number"
+        ? String(price)
+        : "",
     currency: typeof raw.currency === "string" ? raw.currency : "",
     inStock: raw.in_stock === true,
     stockQuantity:
       typeof raw.stock_quantity === "number" ? raw.stock_quantity : 0,
-    // Anything unknown is treated as the least-certain state, never as exact.
     matchType: matchTypes.includes(raw.match_type as MatchType)
       ? (raw.match_type as MatchType)
       : "insufficient_data",
@@ -245,8 +246,10 @@ export function parseSuggestionResponse(body: unknown): SuggestionResult {
         ? body.exact_match_count
         : null,
     model: typeof body.model === "string" ? body.model : "",
-    rankingSource: body.ranking_source === "catalog_fallback" ? "catalog_fallback" : "ai",
-    retrievalMode: body.retrieval_mode === "hybrid" ? "hybrid" : "keyword_fallback",
+    rankingSource:
+      body.ranking_source === "catalog_fallback" ? "catalog_fallback" : "ai",
+    retrievalMode:
+      body.retrieval_mode === "hybrid" ? "hybrid" : "keyword_fallback",
     disclaimer: typeof body.disclaimer === "string" ? body.disclaimer : "",
   };
 }
