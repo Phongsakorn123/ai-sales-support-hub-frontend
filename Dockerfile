@@ -20,8 +20,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-COPY --from=build /app ./
+COPY --from=build --chown=node:node /app ./
 
 EXPOSE 3000
+
+USER node
 
 CMD ["npm", "run", "start"]
