@@ -14,7 +14,7 @@ export default function LoginForm() {
   } = useLoginViewModel();
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <form className="space-y-5" method="post" onSubmit={handleSubmit}>
       <div>
         <label
           className="mb-2 block text-sm font-medium text-slate-700"
