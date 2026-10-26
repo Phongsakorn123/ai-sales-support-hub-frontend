@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { connection } from "next/server";
 import LoginIllustration from "@/features/auth/presentation/components/login-illustration";
 import RegisterForm from "@/features/auth/presentation/components/register-form";
@@ -9,7 +10,15 @@ export const metadata: Metadata = {
   description: "Create an account for AI Sales Support Hub.",
 };
 
-export default async function RegisterPage() {
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageContent />
+    </Suspense>
+  );
+}
+
+async function RegisterPageContent() {
   await connection();
 
   return (

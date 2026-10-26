@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { connection } from "next/server";
 import LoginForm from "@/features/auth/presentation/components/login-form";
 import LoginIllustration from "@/features/auth/presentation/components/login-illustration";
@@ -9,7 +10,15 @@ export const metadata: Metadata = {
   description: "Sign in to discover products and empower your sales workflow.",
 };
 
-export default async function LoginPage() {
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+async function LoginPageContent() {
   await connection();
 
   return (
