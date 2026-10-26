@@ -96,6 +96,28 @@ export default function DashboardWorkspace() {
   const detailProduct =
     products.find((product) => product.id === detailProductId) ?? null;
 
+  const activeProducts = products.filter((product) => !product.discontinued);
+  const stockUnits = products.reduce((total, product) => {
+    const quantity = Number(product.stockQuantity);
+    return total + (Number.isInteger(quantity) && quantity > 0 ? quantity : 0);
+  }, 0);
+  const inventoryValueByCurrency = products.reduce((totals, product) => {
+    const price = Number(product.sellingPrice);
+    const quantity = Number(product.stockQuantity);
+    if (Number.isFinite(price) && price > 0 && Number.isInteger(quantity) && quantity > 0) {
+      const currency = /^[A-Z]{3}$/.test(product.currency) ? product.currency : "THB";
+      totals.set(currency, (totals.get(currency) ?? 0) + price * quantity);
+    }
+    return totals;
+  }, new Map<string, number>());
+  const productCategories = [...products.reduce((counts, product) => {
+    const category = categoryOf(product);
+    counts.set(category, (counts.get(category) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>())]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 5);
+
   useEffect(() => {
     const saved = window.localStorage.getItem(VOICE_LANGUAGE_KEY);
     if (voiceLanguages.some((option) => option.code === saved)) {
@@ -772,58 +794,62 @@ export default function DashboardWorkspace() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <MetricCard label="Searches this week" value="248" change="+12%" />
-              <MetricCard label="Products matched" value="186" change="+8.4%" />
-              <MetricCard label="Avg. response time" value="1.2s" change="−0.3s" />
-            </div>
-
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
-                <h3 className="text-sm font-medium text-slate-200">
-                  Search activity
-                </h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  Product searches over the past week
-                </p>
-                <div
-                  aria-label="Bar chart showing daily search activity"
-                  className="mt-6 flex h-40 items-end justify-between gap-2"
-                  role="img"
-                >
-                  {[42, 64, 52, 86, 70, 100, 76].map((height, index) => (
-                    <div
-                      className="flex h-full flex-1 flex-col items-center justify-end gap-2"
-                      key={index}
-                    >
-                      <div
-                        className="w-full max-w-10 rounded-t-md bg-indigo-400/70"
-                        style={{ height: `${height}%` }}
-                      />
-                      <span className="text-[10px] text-slate-500">
-                        {["M", "T", "W", "T", "F", "S", "S"][index]}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            {productsStatus === "loading" ? (
+              <p className="mt-6 rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5 text-sm text-slate-400" role="status">
+                Loading product analytics…
+              </p>
+            ) : productsStatus === "error" ? (
+              <div className="mt-6 rounded-xl border border-rose-400/20 bg-rose-400/[0.05] p-5" role="alert">
+                <p className="text-sm text-rose-200">{productsError}</p>
+                <button className="mt-3 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-200 hover:bg-white/[0.05]" onClick={reloadProducts} type="button">
+                  Retry
+                </button>
               </div>
-              <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
-                <h3 className="text-sm font-medium text-slate-200">
-                  Top product categories
-                </h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  Most frequently matched categories
-                </p>
-                <div className="mt-6 space-y-5">
-                  <CategoryBar label="Laboratory" value={76} />
-                  <CategoryBar label="Monitoring" value={58} />
-                  <CategoryBar label="Analytics" value={34} />
+            ) : (
+              <>
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <MetricCard label="Total products" value={products.length.toLocaleString()} />
+                  <MetricCard label="Active products" value={activeProducts.length.toLocaleString()} />
+                  <MetricCard label="Units in stock" value={stockUnits.toLocaleString()} />
                 </div>
-              </div>
-            </div>
-            <p className="mt-5 text-center text-[11px] text-slate-500">
-              Sample dashboard data for preview; analytics are not connected to a data source.
-            </p>
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
+                    <h3 className="text-sm font-medium text-slate-200">Catalog value</h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Estimated value at selling price, grouped by product currency
+                    </p>
+                    {inventoryValueByCurrency.size ? (
+                      <div className="mt-5 space-y-2">
+                        {[...inventoryValueByCurrency].sort(([a], [b]) => a.localeCompare(b)).map(([currency, value]) => (
+                          <p className="text-2xl font-semibold tracking-tight text-white" key={currency}>
+                            {new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(value)}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-6 text-sm text-slate-500">No priced products with stock available.</p>
+                    )}
+                    <p className="mt-2 text-xs text-slate-500">Calculated from current product prices and stock quantities</p>
+                  </div>
+                  <div className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 p-5">
+                    <h3 className="text-sm font-medium text-slate-200">Top product categories</h3>
+                    <p className="mt-1 text-xs text-slate-500">Share of products in each category</p>
+                    {productCategories.length ? (
+                      <div className="mt-6 space-y-5">
+                        {productCategories.map(([label, count]) => (
+                          <CategoryBar key={label} label={label} value={Math.round((count / products.length) * 100)} count={count} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-6 text-sm text-slate-500">No products to analyze yet.</p>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-5 text-center text-[11px] text-slate-500">
+                  Based on your current product catalog. Analytics refresh when product data is reloaded.
+                </p>
+              </>
+            )}
         </section>
       </div>
 
@@ -1049,34 +1075,23 @@ function PopupDialog({
   );
 }
 
-function MetricCard({
-  label,
-  value,
-  change,
-}: {
-  label: string;
-  value: string;
-  change: string;
-}) {
+function MetricCard({ label, value }: { label: string; value: string }) {
   return (
     <article className="rounded-xl border border-white/[0.07] bg-[#080d1b]/60 px-4 py-4">
       <p className="text-xs font-medium text-slate-400">{label}</p>
-      <div className="mt-3 flex items-end justify-between">
+      <div className="mt-3">
         <p className="text-2xl font-semibold tracking-tight text-white">{value}</p>
-        <span className="rounded-md bg-emerald-400/[0.09] px-2 py-1 text-[11px] font-medium text-emerald-300">
-          {change}
-        </span>
       </div>
     </article>
   );
 }
 
-function CategoryBar({ label, value }: { label: string; value: number }) {
+function CategoryBar({ label, value, count }: { label: string; value: number; count: number }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-xs">
         <span className="text-slate-300">{label}</span>
-        <span className="text-slate-500">{value}%</span>
+        <span className="text-slate-500">{count} products · {value}%</span>
       </div>
       <div
         aria-label={`${label}: ${value}%`}
