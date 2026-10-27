@@ -30,9 +30,9 @@ type VoiceStatus = "idle" | "listening" | "error";
 
 const errorMessages: Record<string, string> = {
   "not-allowed":
-    "Microphone permission was denied. Allow microphone access in your browser settings and try again.",
+    "Chrome denied microphone access. Allow it for this site in Chrome and macOS settings, then reload the page.",
   "service-not-allowed":
-    "Microphone permission was denied. Allow microphone access in your browser settings and try again.",
+    "Chrome blocked its speech recognition service. Check Chrome's speech service availability or try another browser.",
   "no-speech": "No speech was detected. Click the orb and try speaking again.",
   "audio-capture":
     "No microphone was found. Connect a microphone and try again.",
