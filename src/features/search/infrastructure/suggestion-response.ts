@@ -40,6 +40,8 @@ function parseDocument(raw: unknown): SupportingDocument | null {
     approvalStatus:
       typeof raw.approval_status === "string" ? raw.approval_status : "",
     fileUrl: typeof raw.file_url === "string" ? raw.file_url : "",
+    sourceName: nullableText(raw.source_name),
+    sourceUrl: nullableText(raw.source_url),
   };
 }
 

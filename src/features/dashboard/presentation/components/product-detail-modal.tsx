@@ -1,13 +1,28 @@
 import { CloseIcon } from "@/features/dashboard/presentation/components/dashboard-icons";
 import { ProductThumb } from "@/features/dashboard/presentation/components/product-visual";
-import type { Product } from "@/features/products/domain/product";
+import type { Product, ProductDocument } from "@/features/products/domain/product";
+
+const documentTypeLabels: Record<string, string> = {
+  product_manual: "Product manual",
+  publication: "Publication",
+  datasheet: "Datasheet / publication",
+  valuation_report: "Price / market analysis",
+};
 
 export function ProductDetailModal({
   product,
+  documents,
+  documentsStatus,
+  documentsError,
+  onRetryDocuments,
   onClose,
   onEdit,
 }: {
   product: Product;
+  documents: ProductDocument[];
+  documentsStatus: "idle" | "loading" | "ready" | "error";
+  documentsError: string;
+  onRetryDocuments: () => void;
   onClose: () => void;
   onEdit: () => void;
 }) {
@@ -169,6 +184,76 @@ export function ProductDetailModal({
               </div>
             ),
         )}
+
+        <section
+          aria-labelledby="product-documents-title"
+          className="mt-5 border-t border-white/[0.08] pt-4"
+        >
+          <h3
+            className="text-xs font-semibold text-slate-300"
+            id="product-documents-title"
+          >
+            Related documents
+          </h3>
+          {documentsStatus === "loading" && (
+            <p className="mt-2 text-xs text-slate-400" role="status">
+              Loading product documents…
+            </p>
+          )}
+          {documentsStatus === "error" && (
+            <div className="mt-2 flex items-center justify-between gap-3" role="alert">
+              <p className="text-xs text-rose-200">{documentsError}</p>
+              <button
+                className="shrink-0 rounded-lg border border-white/[0.1] px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.05]"
+                onClick={onRetryDocuments}
+                type="button"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {documentsStatus === "ready" && documents.length === 0 && (
+            <p className="mt-2 text-xs text-slate-400">
+              No external documents are available for this product.
+            </p>
+          )}
+          {documents.length > 0 && (
+            <ul className="mt-2 space-y-2">
+              {documents.map((document) => (
+                <li
+                  className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2"
+                  key={document.id}
+                >
+                  <a
+                    aria-label={`Open ${document.title} from ${document.sourceName ?? "external source"}`}
+                    className="text-sm font-medium text-cyan-200 underline-offset-2 hover:underline"
+                    href={document.sourceUrl ?? undefined}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {document.title}
+                  </a>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-400">
+                    {document.sourceName && <span>{document.sourceName}</span>}
+                    {document.documentType && (
+                      <span>
+                        {documentTypeLabels[document.documentType] ??
+                          document.documentType}
+                      </span>
+                    )}
+                    <span className="text-cyan-200">External source</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {documentsStatus === "ready" && (
+            <p className="mt-2 text-[11px] leading-5 text-slate-500">
+              External links can open publisher pages or live search results. Verify
+              the model and region before sharing.
+            </p>
+          )}
+        </section>
 
         <div className="mt-6 flex justify-end gap-2">
           <button

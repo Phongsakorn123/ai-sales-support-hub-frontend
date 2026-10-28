@@ -1,4 +1,4 @@
-import type { ProductFormValues } from "@/features/products/domain/product";
+import type { ProductDocument, ProductFormValues } from "@/features/products/domain/product";
 import { mapProduct, toProductPayload, type CatalogProduct } from "@/features/products/infrastructure/product-mapper";
 import { fetchProtectedApi } from "@/lib/api/protected-fetch";
 
@@ -78,6 +78,81 @@ export async function fetchProducts(
     );
   }
   return body.map((item) => readMappedProduct(item));
+}
+
+export async function fetchProductDocuments(
+  productId: number,
+  signal?: AbortSignal,
+): Promise<ProductDocument[]> {
+  let response: Response;
+  try {
+    response = await fetchProtectedApi(
+      `/api/products/${productId}/documents`,
+      { signal },
+    );
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new ProductsApiError(
+      "Could not reach the server to load product documents.",
+      "network",
+    );
+  }
+  if (!response.ok) {
+    throw new ProductsApiError(
+      response.status === 401
+        ? "Your session has expired. Please sign in again."
+        : "Could not load documents for this product.",
+      response.status === 401 || response.status === 403 ? "auth" : "server",
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new ProductsApiError(
+      "The server returned unreadable product documents.",
+      "format",
+    );
+  }
+  if (!Array.isArray(body)) {
+    throw new ProductsApiError(
+      "The server returned an unexpected document list.",
+      "format",
+    );
+  }
+  return body.flatMap((raw): ProductDocument[] => {
+    if (typeof raw !== "object" || raw === null) return [];
+    const document = raw as Record<string, unknown>;
+    const sourceUrl =
+      typeof document.source_url === "string" ? document.source_url : null;
+    if (
+      typeof document.id !== "string" ||
+      typeof document.title !== "string" ||
+      !sourceUrl ||
+      !/^https?:\/\//i.test(sourceUrl)
+    ) {
+      return [];
+    }
+    return [{
+      id: document.id,
+      title: document.title,
+      documentType:
+        typeof document.document_type === "string"
+          ? document.document_type
+          : "",
+      isMock: document.is_mock === true,
+      approvalStatus:
+        typeof document.approval_status === "string"
+          ? document.approval_status
+          : "",
+      sourceName:
+        typeof document.source_name === "string"
+          ? document.source_name
+          : null,
+      sourceUrl,
+    }];
+  });
 }
 
 async function failureMessage(response: Response): Promise<string> {

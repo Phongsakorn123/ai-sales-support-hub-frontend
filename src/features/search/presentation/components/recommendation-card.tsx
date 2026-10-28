@@ -1,5 +1,12 @@
 import type { MatchType, Recommendation } from "@/features/search/domain/search-types";
 
+const documentTypeLabels: Record<string, string> = {
+  product_manual: "Product manual",
+  publication: "Publication",
+  datasheet: "Datasheet / publication",
+  valuation_report: "Price / market analysis",
+};
+
 const matchLabels: Record<MatchType, { label: string; className: string }> = {
   exact_match: {
     label: "Exact match",
@@ -111,22 +118,35 @@ export default function RecommendationCard({ item }: { item: Recommendation }) {
           <ul className="mt-1 space-y-1 text-xs text-slate-300">
             {item.supportingDocuments.map((doc) => (
               <li className="break-words" key={doc.documentId}>
-                {/^https?:\/\//.test(doc.fileUrl) ? (
-                  <a
-                    className="text-cyan-300 underline-offset-2 hover:underline"
-                    href={doc.fileUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {doc.title}
-                  </a>
-                ) : (
-                  doc.title
-                )}
-                {doc.documentType && ` · ${doc.documentType}`}
+                {(() => {
+                  const sourceUrl = [doc.sourceUrl, doc.fileUrl].find(
+                    (url) => url && /^https?:\/\//i.test(url),
+                  );
+                  return sourceUrl ? (
+                    <a
+                      aria-label={`Open ${doc.title} from ${doc.sourceName ?? "external source"}`}
+                      className="text-cyan-300 underline-offset-2 hover:underline"
+                      href={sourceUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {doc.title}
+                    </a>
+                  ) : (
+                    doc.title
+                  );
+                })()}
+                {doc.sourceName && ` · ${doc.sourceName}`}
+                {doc.documentType &&
+                  ` · ${documentTypeLabels[doc.documentType] ?? doc.documentType}`}
                 {doc.isMock && (
                   <span className="ml-1.5 rounded bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-200">
                     Demo data
+                  </span>
+                )}
+                {!doc.isMock && doc.sourceUrl && (
+                  <span className="ml-1.5 rounded bg-cyan-400/10 px-1.5 py-0.5 text-[10px] text-cyan-200">
+                    External source
                   </span>
                 )}
               </li>

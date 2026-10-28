@@ -3,7 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { dashboardTabFromRoute } from "@/navigation/app-routes";
-import { emptyProduct, type Product, type ProductFormValues } from "@/features/products/domain/product";
+import { emptyProduct, type Product, type ProductDocument, type ProductFormValues } from "@/features/products/domain/product";
+import { fetchProductDocuments } from "@/features/products/infrastructure/product-api-service";
 import type { ConfirmAction } from "@/features/dashboard/domain/dashboard";
 import { useDependencies } from "@/di/dependency-provider";
 
@@ -42,11 +43,30 @@ export default function useDashboardViewModel() {
   const [showProductErrors, setShowProductErrors] = useState(false);
   const [voiceLanguage, setVoiceLanguage] = useState("en-US");
   const [detailProductId, setDetailProductId] = useState<number | null>(null);
+  const [productDocumentReload, setProductDocumentReload] = useState(0);
+  const [productDocumentState, setProductDocumentState] = useState<{
+    requestKey: string;
+    status: "ready" | "error";
+    documents: ProductDocument[];
+    error: string;
+  } | null>(null);
   const productErrors = productUseCases.validateProduct(productForm);
 
   const categoryOptions = productUseCases.getCategoryOptions(products);
   const activeCategoryFilter = productUseCases.resolveCategoryFilter(products, categoryFilter);
   const detailProduct = products.find((product) => product.id === detailProductId) ?? null;
+  const documentRequestKey =
+    detailProductId === null
+      ? null
+      : `${detailProductId}:${productDocumentReload}`;
+  const currentProductDocumentState =
+    productDocumentState?.requestKey === documentRequestKey
+      ? productDocumentState
+      : null;
+  const productDocumentsStatus: "idle" | "loading" | "ready" | "error" =
+    detailProductId === null
+      ? "idle"
+      : currentProductDocumentState?.status ?? "loading";
   const analytics = productUseCases.getCatalogAnalytics(products);
   const { activeProducts, stockUnits, inventoryValueByCurrency, productCategories } = analytics;
 
@@ -86,6 +106,34 @@ export default function useDashboardViewModel() {
     setVoiceLanguage(code);
     dashboardUseCases.saveVoiceLanguage(code);
   }
+
+  useEffect(() => {
+    if (detailProductId === null) return;
+    const controller = new AbortController();
+    const requestKey = `${detailProductId}:${productDocumentReload}`;
+    fetchProductDocuments(detailProductId, controller.signal)
+      .then((documents) => {
+        setProductDocumentState({
+          requestKey,
+          status: "ready",
+          documents,
+          error: "",
+        });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setProductDocumentState({
+          requestKey,
+          status: "error",
+          documents: [],
+          error:
+            error instanceof Error
+              ? error.message
+              : "Could not load documents for this product.",
+        });
+      });
+    return () => controller.abort();
+  }, [detailProductId, productDocumentReload]);
 
   useEffect(() => {
     if (detailProductId === null) return;
@@ -210,6 +258,10 @@ export default function useDashboardViewModel() {
     voiceLanguage, detailProductId, setDetailProductId, productErrors, categoryOptions,
     activeCategoryFilter, detailProduct, activeProducts, stockUnits, inventoryValueByCurrency,
     productCategories, visibleProducts, groupedProducts, changeVoiceLanguage,
+    productDocuments: currentProductDocumentState?.documents ?? [],
+    productDocumentsStatus,
+    productDocumentsError: currentProductDocumentState?.error ?? "",
+    reloadProductDocuments: () => setProductDocumentReload((count) => count + 1),
     openProductDialog, saveProduct, persistProduct, removeProduct,
   };
 }

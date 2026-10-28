@@ -3,6 +3,16 @@ export interface ProductSpec {
   value: string;
 }
 
+export interface ProductDocument {
+  id: string;
+  title: string;
+  documentType: string;
+  isMock: boolean;
+  approvalStatus: string;
+  sourceName: string | null;
+  sourceUrl: string | null;
+}
+
 export interface ProductFormValues {
   name: string;
   brand: string;

@@ -26,6 +26,8 @@ export default function DashboardWorkspace() {
     setQuickIncludeOos, voiceLanguage, setDetailProductId, productErrors,
     categoryOptions, activeCategoryFilter, detailProduct, activeProducts, stockUnits,
     inventoryValueByCurrency, productCategories, visibleProducts, groupedProducts,
+    productDocuments, productDocumentsStatus, productDocumentsError,
+    reloadProductDocuments,
     changeVoiceLanguage, openProductDialog, saveProduct, persistProduct, removeProduct,
     runSuggestion, submitSearch, retrySearch, submitVoiceQuery,
   } = state;
@@ -87,6 +89,10 @@ export default function DashboardWorkspace() {
             openProductDialog(detailProduct);
           }}
           product={detailProduct}
+          documents={productDocuments}
+          documentsStatus={productDocumentsStatus}
+          documentsError={productDocumentsError}
+          onRetryDocuments={reloadProductDocuments}
         />
       )}
 

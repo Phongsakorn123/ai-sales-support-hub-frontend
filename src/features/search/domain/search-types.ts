@@ -9,6 +9,8 @@ export type SupportingDocument = {
   isMock: boolean;
   approvalStatus: string;
   fileUrl: string;
+  sourceName: string | null;
+  sourceUrl: string | null;
 };
 
 export type Recommendation = {

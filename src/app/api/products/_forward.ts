@@ -2,6 +2,40 @@ export function errorResponse(message: string, status: number): Response {
   return Response.json({ detail: message }, { status });
 }
 
+export async function forwardProductRead(
+  request: Request,
+  path: string,
+): Promise<Response> {
+  const authorization = request.headers.get("Authorization");
+  if (!authorization?.startsWith("Bearer ")) {
+    return errorResponse("Sign in is required.", 401);
+  }
+
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8081";
+  let backendResponse: Response;
+  try {
+    backendResponse = await fetch(new URL(path, apiBaseUrl), {
+      method: "GET",
+      headers: { Authorization: authorization },
+      cache: "no-store",
+    });
+  } catch {
+    return errorResponse(
+      "The product service is temporarily unavailable. Please try again.",
+      503,
+    );
+  }
+
+  return new Response(await backendResponse.text(), {
+    status: backendResponse.status,
+    headers: {
+      "Content-Type":
+        backendResponse.headers.get("Content-Type") ?? "application/json",
+    },
+  });
+}
+
 export async function forwardProductRequest(
   request: Request,
   path: string,
