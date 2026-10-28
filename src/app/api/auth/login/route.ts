@@ -1,4 +1,4 @@
-import { isLoginTokenResponse } from "@/lib/api/login";
+import { isLoginTokenResponse } from "@/features/auth/infrastructure/login-api";
 
 function errorResponse(message: string, status: number): Response {
   return Response.json({ detail: message }, { status });

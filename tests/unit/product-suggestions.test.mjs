@@ -3,11 +3,10 @@ import test from "node:test";
 import {
   buildDetailQuery,
   buildRequest,
-  parseSuggestionResponse,
-  SuggestionFormatError,
   validateDetailCriteria,
   validateRequirements,
-} from "../../src/lib/api/product-suggestions-core.ts";
+} from "../../src/features/search/domain/search-rules.ts";
+import { parseSuggestionResponse, SuggestionFormatError } from "../../src/features/search/infrastructure/suggestion-response.ts";
 
 const empty = {
   category: "",
@@ -179,10 +178,22 @@ test("unexpected response shapes throw SuggestionFormatError", () => {
 
 test("quick and detail search share one request builder and one response parser", async () => {
   const { readFileSync } = await import("node:fs");
-  const workspace = readFileSync("src/components/dashboard/dashboard-workspace.tsx", "utf8");
-  assert.equal((workspace.match(/requestProductSuggestions\(/g) ?? []).length, 1);
-  assert.match(workspace, /runSuggestion\(searchText\.trim\(\)/);
-  assert.match(workspace, /onSearch=\{\(requirements, max, oos\) =>\s*void runSuggestion\(requirements, max, oos\)/);
-  const detail = readFileSync("src/components/dashboard/detailed-search.tsx", "utf8");
-  assert.doesNotMatch(detail, /requestProductSuggestions|fetch/);
+  const viewModel = readFileSync(
+    "src/features/search/presentation/view-models/product-search-view-model.ts",
+    "utf8",
+  );
+  assert.equal((viewModel.match(/searchUseCases\.searchProducts\(/g) ?? []).length, 1);
+  assert.match(viewModel, /runSuggestion\(searchText\.trim\(\)/);
+
+  const searchPanel = readFileSync(
+    "src/features/dashboard/presentation/components/search-panel.tsx",
+    "utf8",
+  );
+  assert.match(searchPanel, /onSearch=\{\(requirements, max, oos\) =>\s*void runSuggestion\(requirements, max, oos\)/);
+
+  const detail = readFileSync(
+    "src/features/search/presentation/components/detailed-search.tsx",
+    "utf8",
+  );
+  assert.doesNotMatch(detail, /searchProducts|fetch/);
 });

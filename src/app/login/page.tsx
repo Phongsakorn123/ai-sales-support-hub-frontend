@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/navigation/app-routes";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -60,7 +61,7 @@ async function LoginPageContent() {
             <p className="mt-8 text-center text-sm text-slate-500">
               Don&apos;t have an account?{" "}
               <Link
-                href="/register"
+                href={APP_ROUTES.register}
                 className="font-semibold text-indigo-700 decoration-indigo-300 underline-offset-4 hover:text-indigo-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
               >
                 Create account

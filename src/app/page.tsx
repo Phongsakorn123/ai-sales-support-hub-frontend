@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import AuthenticatedPage from "@/features/auth/presentation/components/authenticated-page";
-import DashboardWorkspace from "@/components/dashboard/dashboard-workspace";
+import DashboardWorkspace from "@/features/dashboard/presentation/dashboard-workspace";
 
 export default function Home() {
   return (

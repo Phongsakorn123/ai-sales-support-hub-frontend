@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/navigation/app-routes";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -71,7 +72,7 @@ async function RegisterPageContent() {
               Already have an account?{" "}
               <Link
                 className="font-semibold text-indigo-700 decoration-indigo-300 underline-offset-4 hover:text-indigo-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
-                href="/login"
+                href={APP_ROUTES.login}
               >
                 Sign in
               </Link>

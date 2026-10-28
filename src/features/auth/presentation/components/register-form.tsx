@@ -1,7 +1,9 @@
 "use client";
 
+import { APP_ROUTES } from "@/navigation/app-routes";
+
 import Link from "next/link";
-import { useRegisterViewModel } from "../hooks/use-register-view-model";
+import { useRegisterViewModel } from "../view-models/use-register-view-model";
 
 export default function RegisterForm() {
   const {
@@ -136,7 +138,7 @@ export default function RegisterForm() {
         <p className="-mt-2 text-center text-sm">
           <Link
             className="font-semibold text-indigo-700 decoration-indigo-300 underline-offset-4 hover:text-indigo-800 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
-            href="/login"
+            href={APP_ROUTES.login}
           >
             Continue to sign in
           </Link>

@@ -13,6 +13,36 @@ Next.js web application for sales staff to search the product catalog, review AI
 
 Search depends on backend configuration. If OpenRouter is unavailable, the API can return catalog-matched results without AI ranking. `retrieval_mode: hybrid` means keyword and local embedding retrieval were both used; `keyword_fallback` means semantic retrieval was unavailable. Supporting documents included with the demo catalog are marked as mock data.
 
+## Source organization
+
+The `src/app` directory contains Next.js pages and route handlers. Feature code is grouped by responsibility:
+
+```text
+src/
+├── app/                         # Next.js pages and backend proxy routes
+├── di/                          # Dependency composition root and provider
+├── features/
+│   ├── auth/                    # Login, registration, session, and auth UI
+│   ├── dashboard/               # Dashboard state, tabs, and analytics UI
+│   ├── products/                # Product model, API adapter, and management UI
+│   └── search/                  # Search rules, API adapter, and result UI
+└── lib/api/                     # Shared protected-fetch transport
+```
+
+Each feature uses `domain/`, `application/`, `infrastructure/`, and `presentation/` folders.
+
+Each feature follows the same dependency direction:
+
+```text
+Presentation component → ViewModel → Use case → Repository interface
+                                             ↓
+                                  Repository implementation → Service
+```
+
+`domain` owns entities, rules, and repository interfaces. `application` contains use cases. `infrastructure` implements repositories and services. `presentation/components` renders UI, while `presentation/view-models` owns screen state and coordinates use cases. `src/di/app-dependencies.ts` is the composition root: it wires service → repository → use case, and `DependencyProvider` injects those use cases into ViewModels. Next.js route handlers stay in `src/app/api` and forward requests to the backend.
+
+For example, product changes flow through `dashboard-view-model` → `ProductUseCases` → `ProductRepository` interface → `ProductApiRepository` → `ProductApi` interface → `ProductApiService`. The composition root constructs the concrete adapters; a test or alternate runtime can inject different `AppDependencies` through `DependencyProvider`.
+
 ## Run locally
 
 Requirements: Node.js and npm. From this repository:
@@ -61,9 +91,13 @@ The unit suite covers product-suggestion request/response handling and fallback 
 
 GitHub Actions in this repository run frontend tests and security scans. The security workflow includes Semgrep, Trivy dependency scanning, and IaC scanning. The backend repository contains its own backend test and DAST workflows. Review workflow files for their exact triggers and scan scope.
 
-## Main routes
+## Main routes and dashboard navigation
 
 - `/login` and `/register`: account access.
-- `/`: authenticated sales dashboard, product search, catalog management, and analytics views.
+- `/?tab=search`: product search (also the default `/` route).
+- `/?tab=products`: catalog management.
+- `/?tab=analytics`: catalog analytics.
+
+Route paths are defined in `src/navigation/app-routes.ts`. Dashboard labels, icons, and destinations are defined in `src/features/dashboard/presentation/navigation/dashboard-navigation-items.ts`; the navigation UI is in `dashboard-navigation.tsx`.
 
 The analytics view is part of the dashboard navigation. Search history persistence and downloadable search-result export are not implemented.

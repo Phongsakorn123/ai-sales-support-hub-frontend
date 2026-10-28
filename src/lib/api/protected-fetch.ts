@@ -2,7 +2,7 @@ import {
   clearAccessToken,
   getAccessToken,
   hasUnexpiredAccessToken,
-} from "@/lib/auth/session";
+} from "@/features/auth/infrastructure/session";
 
 export class AuthenticationRequiredError extends Error {
   constructor() {

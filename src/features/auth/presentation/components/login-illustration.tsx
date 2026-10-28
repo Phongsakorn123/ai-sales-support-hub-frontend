@@ -1,3 +1,4 @@
+import { APP_ROUTES } from "@/navigation/app-routes";
 import Link from "next/link";
 
 export default function LoginIllustration() {
@@ -14,7 +15,7 @@ export default function LoginIllustration() {
 
       <Link
         className="relative z-10 flex w-fit items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600"
-        href="/"
+        href={APP_ROUTES.home}
       >
         <span className="flex size-11 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-900/15">
           <svg

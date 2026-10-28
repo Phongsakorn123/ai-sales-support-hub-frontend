@@ -1,6 +1,6 @@
 "use client";
 
-import { useLoginViewModel } from "../hooks/use-login-view-model";
+import { useLoginViewModel } from "../view-models/use-login-view-model";
 
 export default function LoginForm() {
   const {
